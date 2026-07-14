@@ -34,7 +34,7 @@ export async function optimizeImages({ mediaRoot, publicRoot, manifestPath }) {
     if (!metadata.width || !metadata.height || (metadata.pages ?? 1) > 1) continue;
 
     const variants = [];
-    for (const width of targetWidths.filter((candidate) => candidate < metadata.width)) {
+    for (const width of targetWidths.filter((candidate) => candidate <= metadata.width)) {
       const parsed = path.parse(file);
       const output = path.join(parsed.dir, `${parsed.name}.w${width}.webp`);
       await sharp(file)
@@ -45,7 +45,9 @@ export async function optimizeImages({ mediaRoot, publicRoot, manifestPath }) {
       variantsCreated += 1;
     }
 
-    variants.push({ src: publicUrl(publicRoot, file), width: metadata.width });
+    if (!variants.some((variant) => variant.width === metadata.width)) {
+      variants.push({ src: publicUrl(publicRoot, file), width: metadata.width });
+    }
     manifest[publicUrl(publicRoot, file)] = {
       width: metadata.width,
       height: metadata.height,
