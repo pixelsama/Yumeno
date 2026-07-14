@@ -290,14 +290,14 @@ body:not([data-page='home']) .scene-wash {
 .hero-content {
   position: relative;
   z-index: 1;
-  max-width: 690px;
+  max-width: 780px;
 }
 .hero .eyebrow {
   color: #d2d5ff;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.48);
 }
 .hero h1 {
-  max-width: 640px;
+  max-width: 760px;
   margin: 18px 0 24px;
   font-family: var(--serif);
   font-size: clamp(3.5rem, 7vw, 7rem);
@@ -1065,6 +1065,7 @@ body:not([data-page='home']) .scene-wash {
 }
 .site-footer nav {
   justify-content: flex-end;
+  padding-right: 128px;
 }
 .reading-progress {
   position: fixed;
@@ -1469,6 +1470,10 @@ body:not([data-page='home']) .scene-wash {
   .site-footer > div,
   .site-footer nav {
     justify-content: center;
+  }
+  .site-footer nav {
+    margin-bottom: 48px;
+    padding-right: 0;
   }
   .site-footer > p {
     margin: 0;
