@@ -7,6 +7,7 @@ Yumeno is the **public engine**. Never add a real site's private writing, drafts
 - Node 22.12+; run `npm ci`, `npm run check`, `npm run build`, and `npm run format:check`.
 - Always test a non-root base such as `ASTRO_BASE=/Yumeno`; route assets through `withBase()`.
 - Engine output is `dist/`; `.site/` and copied `public/media/` are generated and ignored.
+- Keep original raster media in `site/public/media`; builds generate responsive WebP variants automatically. Do not commit generated variants to a source repository.
 - Do not weaken complete-HTML trust boundaries: HTML is owner-authored and unsanitized, rendered in a sandboxed iframe and copied as an independent document.
 
 ## Configuration

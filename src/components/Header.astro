@@ -1,10 +1,12 @@
 ---
 import { siteConfig, sceneConfig } from '@/lib/config';
 import { withBase } from '@/lib/base';
+import { responsiveImage } from '@/lib/images';
 const currentPath = Astro.url.pathname;
 const active = (href: string) =>
   href === '/' ? currentPath === withBase('/') : currentPath.startsWith(withBase(href));
 const brand = siteConfig.brand;
+const brandImage = brand.image ? responsiveImage(brand.image) : undefined;
 ---
 
 <header class="site-header">
@@ -14,9 +16,13 @@ const brand = siteConfig.brand;
     aria-label={`${brand.text} 首页`}
   >
     {
-      brand.mode === 'image' && brand.image ? (
+      brand.mode === 'image' && brandImage ? (
         <img
-          src={withBase(brand.image)}
+          src={brandImage.src}
+          srcset={brandImage.srcset}
+          sizes={`${brand.width ?? 168}px`}
+          width={brandImage.width}
+          height={brandImage.height}
           alt={brand.text}
           style={`--brand-width:${brand.width ?? 168}px`}
         />

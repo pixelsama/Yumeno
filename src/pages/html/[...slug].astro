@@ -3,12 +3,14 @@ import BaseLayout from '@/layouts/BaseLayout.astro';
 import { htmlContent } from '@/lib/config';
 import { formatDate, sectionInfo } from '@/lib/content';
 import { withBase } from '@/lib/base';
+import { responsiveImage } from '@/lib/images';
 export function getStaticPaths() {
   return htmlContent
     .filter((item) => !item.draft || import.meta.env.DEV)
     .map((entry) => ({ params: { slug: entry.slug }, props: { entry } }));
 }
 const { entry } = Astro.props;
+const coverImage = entry.cover ? responsiveImage(entry.cover) : undefined;
 ---
 
 <BaseLayout
@@ -38,9 +40,18 @@ const { entry } = Astro.props;
         }
       </ul>
     </header>{
-      entry.cover && (
+      coverImage && (
         <figure class="article-cover">
-          <img src={withBase(entry.cover)} alt={entry.title} />
+          <img
+            src={coverImage.src}
+            srcset={coverImage.srcset}
+            sizes="(max-width: 700px) calc(100vw - 20px), 1100px"
+            width={coverImage.width}
+            height={coverImage.height}
+            alt={entry.title}
+            fetchpriority="high"
+            decoding="async"
+          />
         </figure>
       )
     }<p class="html-search-text">{entry.searchText}</p><iframe
@@ -48,6 +59,6 @@ const { entry } = Astro.props;
       src={withBase(`/html-docs/${entry.slug}/`)}
       title={entry.title}
       sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-      loading="eager"></iframe>
+      loading="lazy"></iframe>
   </article></BaseLayout
 >

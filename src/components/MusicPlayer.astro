@@ -17,7 +17,7 @@ const tracks = musicConfig.tracks.map((track) => ({
       aria-label="音乐播放器"
     >
       <>
-        <audio id="music-audio" preload="metadata" />
+        <audio id="music-audio" preload="none" />
         <button class="player-collapse" type="button" aria-label="展开播放器">
           <>
             <span class="record" aria-hidden="true" />
@@ -117,15 +117,22 @@ const tracks = musicConfig.tracks.map((track) => ({
     const error = player?.querySelector<HTMLElement>('#player-error');
     const toggle = player?.querySelector<HTMLElement>('.play-toggle');
     const save = () => localStorage.setItem(stateKey, JSON.stringify(state));
-    function load(restore = true) {
+    function render() {
       const track = music.tracks[state.index % music.tracks.length];
       if (!track) return;
-      playerAudio.src = track.src;
       playerAudio.volume = state.volume;
       if (title) title.textContent = track.title;
       if (artist) artist.textContent = track.artist;
       if (volume) volume.value = String(state.volume);
       if (panel) panel.hidden = !state.open;
+    }
+    function load(restore = true) {
+      const track = music.tracks[state.index % music.tracks.length];
+      if (!track) return;
+      render();
+      if (playerAudio.dataset.trackSrc === track.src) return;
+      playerAudio.dataset.trackSrc = track.src;
+      playerAudio.src = track.src;
       playerAudio.addEventListener(
         'loadedmetadata',
         () => {
@@ -134,8 +141,9 @@ const tracks = musicConfig.tracks.map((track) => ({
         { once: true },
       );
     }
-    async function play() {
+    async function play(restore = true) {
       try {
+        load(restore);
         await playerAudio.play();
         state.playing = true;
         if (toggle) toggle.textContent = '❚❚';
@@ -149,8 +157,7 @@ const tracks = musicConfig.tracks.map((track) => ({
     function next(delta = 1) {
       state.index = (state.index + delta + music.tracks.length) % music.tracks.length;
       state.time = 0;
-      load(false);
-      play();
+      play(false);
     }
     player?.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
@@ -170,6 +177,7 @@ const tracks = musicConfig.tracks.map((track) => ({
       if (action === 'previous') next(-1);
     });
     progress?.addEventListener('input', () => {
+      load();
       if (playerAudio.duration)
         playerAudio.currentTime = (Number(progress.value) / 1000) * playerAudio.duration;
     });
@@ -194,7 +202,7 @@ const tracks = musicConfig.tracks.map((track) => ({
     playerAudio.addEventListener('error', () => {
       if (error) error.textContent = '这首音频无法加载，可以切换下一首。';
     });
-    load();
+    render();
   }
   document.addEventListener('astro:page-load', setup);
   setup();

@@ -1,5 +1,13 @@
 <script>
+  declare global {
+    interface Window {
+      __YUMENO_ENHANCE_ABORT__?: AbortController;
+    }
+  }
   async function enhance() {
+    window.__YUMENO_ENHANCE_ABORT__?.abort();
+    const controller = new AbortController();
+    window.__YUMENO_ENHANCE_ABORT__ = controller;
     document.querySelectorAll<HTMLElement>('.article-body pre').forEach((pre) => {
       if (pre.dataset.copyReady) return;
       pre.dataset.copyReady = 'true';
@@ -30,7 +38,7 @@
       const length = article.offsetHeight - innerHeight;
       progress.style.width = `${Math.max(0, Math.min(1, (scrollY - start) / length)) * 100}%`;
     };
-    addEventListener('scroll', update, { passive: true });
+    addEventListener('scroll', update, { passive: true, signal: controller.signal });
     update();
     document.querySelectorAll<HTMLImageElement>('.article-body img').forEach((image) => {
       image.addEventListener('click', () => {

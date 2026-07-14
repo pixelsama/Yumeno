@@ -4,5 +4,7 @@ dist/
 .site/
 public/media/
 public/html-docs/
+public/*.w*.webp
+public/**/*.w*.webp
 .DS_Store
 *.log

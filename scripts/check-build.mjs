@@ -32,6 +32,14 @@ for (const file of htmlFiles) {
     (match) => !match[0].includes(`${base}/`) && !match[0].includes('href="/#'),
   );
   if (badRoot) throw new Error(`Base path leak in ${path.relative(dist, file)}: ${badRoot[0]}`);
+  const sceneImage = html.match(/<img\b[^>]*\bid="scene-image"[^>]*>/i)?.[0];
+  if (sceneImage && /\bsrc=/.test(sceneImage)) {
+    throw new Error(`Scene image must be selected before requesting media: ${file}`);
+  }
+  const musicAudio = html.match(/<audio\b[^>]*\bid="music-audio"[^>]*>/i)?.[0];
+  if (musicAudio && (!/\bpreload="none"/.test(musicAudio) || /\bsrc=/.test(musicAudio))) {
+    throw new Error(`Music must stay unloaded before user interaction: ${file}`);
+  }
   if (/<\/html>\s*\S+/i.test(html)) throw new Error(`Content after </html>: ${file}`);
 }
 for (const required of ['index.html', 'rss.xml', 'robots.txt', 'sitemap-index.xml', '.nojekyll']) {

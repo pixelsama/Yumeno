@@ -8,25 +8,32 @@ import {
   type UnifiedEntry,
 } from '@/lib/content';
 import { withBase } from '@/lib/base';
+import { responsiveImage } from '@/lib/images';
 interface Props {
   item: UnifiedEntry;
   featured?: boolean;
 }
 const { item, featured = false } = Astro.props;
 const data = dataOf(item);
+const coverImage = data.cover ? responsiveImage(data.cover) : undefined;
 ---
 
 <article
-  class:list={['content-card', { featured, 'has-cover': Boolean(data.cover) }]}
+  class:list={['content-card', { featured, 'has-cover': Boolean(coverImage) }]}
   data-section={data.section}
 >
   {
-    data.cover && (
+    coverImage && (
       <a class="card-cover" href={withBase(routeFor(item))} aria-hidden="true" tabindex="-1">
         <img
-          src={withBase(data.cover)}
+          src={coverImage.src}
+          srcset={coverImage.srcset}
+          sizes="(max-width: 700px) calc(100vw - 28px), (max-width: 1228px) 39vw, 460px"
+          width={coverImage.width}
+          height={coverImage.height}
           alt=""
-          loading={featured ? 'eager' : 'lazy'}
+          loading="lazy"
+          fetchpriority="low"
           decoding="async"
         />
       </a>
@@ -48,8 +55,10 @@ const data = dataOf(item);
             </li>
           ))
         }
-      </ul><a class="read-link" href={withBase(routeFor(item))}
-        >阅读全文 <span aria-hidden="true">→</span></a
+      </ul><a
+        class="read-link"
+        href={withBase(routeFor(item))}
+        aria-label={`阅读《${data.title}》全文`}>阅读全文 <span aria-hidden="true">→</span></a
       >
     </div>
   </div>

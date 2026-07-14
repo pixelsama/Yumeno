@@ -2,6 +2,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { optimizeImages } from './optimize-images.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.resolve(root, process.env.SITE_SOURCE ?? 'examples/site');
@@ -56,4 +57,11 @@ await writeFile(
   path.join(target, 'generated', 'html-manifest.json'),
   JSON.stringify(manifest, null, 2),
 );
-console.log(`Prepared ${source}; ${manifest.length} complete HTML document(s).`);
+const imageResult = await optimizeImages({
+  mediaRoot: path.join(root, 'public'),
+  publicRoot: path.join(root, 'public'),
+  manifestPath: path.join(target, 'generated', 'image-manifest.json'),
+});
+console.log(
+  `Prepared ${source}; ${manifest.length} complete HTML document(s), ${imageResult.variants} responsive image variant(s).`,
+);

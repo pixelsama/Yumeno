@@ -28,7 +28,8 @@
     "mermaid": "latest",
     "rehype-katex": "latest",
     "remark-gfm": "latest",
-    "remark-math": "latest"
+    "remark-math": "latest",
+    "sharp": "latest"
   },
   "devDependencies": {
     "@astrojs/check": "latest",
