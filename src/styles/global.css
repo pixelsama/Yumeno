@@ -475,6 +475,12 @@ body:not([data-page='home']) .scene-wash {
   font-size: 0.72rem;
   color: var(--ink-soft);
 }
+.card-foot a {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  padding-inline: 5px;
+}
 .read-link {
   white-space: nowrap;
   color: var(--accent-ink);
