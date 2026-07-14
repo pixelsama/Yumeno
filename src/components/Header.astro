@@ -131,23 +131,37 @@ const brandImage = brand.image ? responsiveImage(brand.image) : undefined;
       __YUMENO_HEADER_BOUND__?: boolean;
     }
   }
+  function setTheme(theme: 'light' | 'dark') {
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.themePreference = theme;
+    const trigger = document.querySelector<HTMLButtonElement>('.theme-trigger');
+    if (trigger) {
+      const label = theme === 'dark' ? '切换到亮色模式' : '切换到暗色模式';
+      trigger.setAttribute('aria-label', label);
+      trigger.title = label;
+    }
+  }
   function applyTheme() {
-    const preference = localStorage.getItem('yumeno:theme') ?? 'system';
+    let preference = 'system';
+    try {
+      preference = localStorage.getItem('yumeno:theme') ?? 'system';
+    } catch {}
     const dark =
       preference === 'dark' ||
       (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
-    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
-    document.documentElement.dataset.themePreference = preference;
+    setTheme(dark ? 'dark' : 'light');
   }
   if (!window.__YUMENO_HEADER_BOUND__) {
     window.__YUMENO_HEADER_BOUND__ = true;
     document.addEventListener('click', (event) => {
       const target = event.target as HTMLElement;
       if (target.closest('.theme-trigger')) {
-        const current = document.documentElement.dataset.themePreference ?? 'system';
-        const next = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
-        localStorage.setItem('yumeno:theme', next);
-        applyTheme();
+        const current = document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        try {
+          localStorage.setItem('yumeno:theme', next);
+        } catch {}
+        setTheme(next);
       }
       const button = target.closest<HTMLButtonElement>('.menu-trigger');
       if (button) {
@@ -162,6 +176,7 @@ const brandImage = brand.image ? responsiveImage(brand.image) : undefined;
       }
     });
     matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+    document.addEventListener('astro:page-load', applyTheme);
   }
   applyTheme();
 </script>
