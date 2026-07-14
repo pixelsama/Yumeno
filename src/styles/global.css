@@ -377,8 +377,11 @@ body:not([data-page='home']) .scene-wash {
 }
 .home-content {
   position: relative;
-  padding: 100px 0;
+  width: 100%;
+  margin-inline: 0;
+  padding: 100px max(24px, calc((100vw - 1180px) / 2));
   background: color-mix(in srgb, var(--paper) 96%, transparent);
+  backdrop-filter: blur(14px);
 }
 .section-heading {
   display: flex;
@@ -497,7 +500,12 @@ body:not([data-page='home']) .scene-wash {
   display: grid;
   grid-template-columns: 280px 1fr;
   gap: 80px;
-  padding-block: 84px;
+  width: 100%;
+  margin-inline: 0;
+  padding: 84px max(24px, calc((100vw - 1180px) / 2));
+  border-top: 1px solid var(--line);
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
+  backdrop-filter: blur(14px);
 }
 .section-ledger nav {
   border-top: 1px solid var(--line);
@@ -1345,7 +1353,7 @@ body:not([data-page='home']) .scene-wash {
     display: none;
   }
   .home-content {
-    padding: 68px 0;
+    padding: 68px 14px;
   }
   .section-heading {
     display: block;
@@ -1372,7 +1380,7 @@ body:not([data-page='home']) .scene-wash {
     flex-direction: column;
   }
   .section-ledger {
-    padding-block: 70px;
+    padding: 70px 14px;
   }
   .section-ledger nav a {
     grid-template-columns: 90px 1fr 20px;
