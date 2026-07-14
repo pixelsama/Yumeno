@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Yumeno music",
+  "type": "object",
+  "required": ["enabled", "initialVolume", "tracks"],
+  "properties": {
+    "enabled": { "type": "boolean" },
+    "initialVolume": { "type": "number", "minimum": 0, "maximum": 1 },
+    "tracks": {
+      "type": "array",
+      "items": { "type": "object", "required": ["id", "title", "artist", "source"] }
+    }
+  }
+}

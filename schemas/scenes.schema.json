@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Yumeno scenes",
+  "type": "object",
+  "required": ["fallback", "stableFor", "scenes"],
+  "properties": {
+    "fallback": { "type": "string" },
+    "stableFor": { "enum": ["day", "session"] },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "label", "image", "alt", "priority"],
+        "properties": {
+          "id": { "type": "string" },
+          "label": { "type": "string" },
+          "image": { "type": "string" },
+          "alt": { "type": "string" },
+          "priority": { "type": "number" },
+          "weight": { "type": "number", "exclusiveMinimum": 0 },
+          "manualSelectable": { "type": "boolean" }
+        }
+      }
+    }
+  }
+}

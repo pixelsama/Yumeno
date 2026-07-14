@@ -1,0 +1,248 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import { withBase } from '@/lib/base';
+import {
+  formatDate,
+  routeFor,
+  sectionInfo,
+  readingMinutes,
+  type MarkdownEntry,
+} from '@/lib/content';
+import type { MarkdownHeading } from 'astro';
+interface Props {
+  entry: MarkdownEntry;
+  headings: MarkdownHeading[];
+  body: string;
+  previous?: MarkdownEntry | undefined;
+  next?: MarkdownEntry | undefined;
+  related?: MarkdownEntry[] | undefined;
+  seriesChapters?: MarkdownEntry[] | undefined;
+}
+const { entry, headings, body, previous, next, related = [], seriesChapters = [] } = Astro.props;
+const data = entry.data;
+const section = sectionInfo[data.section];
+const minutes = readingMinutes(body);
+const isNovel = data.subtype === 'original' && data.series;
+const current = seriesChapters.findIndex((chapter) => chapter.id === entry.id);
+const previousChapter = current > 0 ? seriesChapters[current - 1] : undefined;
+const nextChapter = current >= 0 ? seriesChapters[current + 1] : undefined;
+const visibleHeadings = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3);
+const facts: Array<{ label: string; value: string }> = [];
+if (data.section === 'game') {
+  if (data.gameTitle) facts.push({ label: '作品', value: data.gameTitle });
+  if (data.developer) facts.push({ label: '开发', value: data.developer });
+  if (data.platform?.length) facts.push({ label: '平台', value: data.platform.join(' / ') });
+  if (data.releaseYear) facts.push({ label: '发行', value: String(data.releaseYear) });
+  if (data.rating) facts.push({ label: '评分', value: `${data.rating}/10` });
+}
+if (data.section === 'anime') {
+  if (data.animeTitle) facts.push({ label: '作品', value: data.animeTitle });
+  if (data.studio) facts.push({ label: '制作', value: data.studio });
+  if (data.season) facts.push({ label: '季度', value: data.season });
+  if (data.year) facts.push({ label: '年份', value: String(data.year) });
+}
+---
+
+<BaseLayout
+  title={data.title}
+  description={data.description}
+  image={data.cover}
+  page="article"
+  section={data.section}
+  type="article"
+  published={data.published}
+  updated={data.updated}
+>
+  <article
+    class:list={['article-page', { 'novel-chapter': isNovel }]}
+    data-pagefind-body
+    data-pagefind-meta={`section:${section.label}`}
+  >
+    <header class="article-header">
+      <nav class="breadcrumb" aria-label="面包屑">
+        <a href={withBase('/')}>首页</a><span>/</span><a href={withBase(`/${section.path}/`)}
+          >{section.label}</a
+        >{
+          isNovel && (
+            <>
+              <>
+                <span>/</span>
+                <a href={withBase(`/light-novels/series/${data.series}/`)}>
+                  {data.seriesTitle ?? data.series}
+                </a>
+              </>
+            </>
+          )
+        }
+      </nav><p class="eyebrow">
+        {isNovel ? `${data.volume ?? '正文'} · ${data.chapter ?? ''}` : section.label}
+      </p><h1 data-pagefind-meta="title">{data.title}</h1><p class="article-deck">
+        {data.description}
+      </p><div class="article-meta">
+        <time datetime={data.published.toISOString()}>{formatDate(data.published)}</time>{
+          data.updated && <span>更新于 {formatDate(data.updated)}</span>
+        }<span>{minutes} 分钟阅读</span>
+      </div>{
+        facts.length > 0 && (
+          <dl class="content-facts">
+            {facts.map((fact) => (
+              <div>
+                <dt>{fact.label}</dt>
+                <dd>{fact.value}</dd>
+              </div>
+            ))}
+          </dl>
+        )
+      }<ul class="tag-list">
+        {
+          data.tags.map((tag) => (
+            <li>
+              <a href={withBase(`/tags/${encodeURIComponent(tag)}/`)}>#{tag}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </header>
+    {
+      data.cover && (
+        <figure class="article-cover">
+          <img src={withBase(data.cover)} alt={data.title} fetchpriority="high" decoding="async" />
+        </figure>
+      )
+    }
+    {
+      isNovel && (
+        <div class="novel-toolbar">
+          <>
+            <a href={withBase(`/light-novels/series/${data.series}/`)}>返回目录</a>
+            <label>
+              字号 <input type="range" min="16" max="24" value="19" data-reader-setting="size" />
+            </label>
+            <label>
+              行距 <input type="range" min="17" max="25" value="20" data-reader-setting="line" />
+            </label>
+            <label>
+              宽度 <input type="range" min="34" max="48" value="42" data-reader-setting="width" />
+            </label>
+          </>
+        </div>
+      )
+    }
+    <div class="article-grid">
+      <div class="article-body"><slot /></div>{
+        visibleHeadings.length > 0 && (
+          <aside class="toc">
+            <details open>
+              <>
+                <summary>本文目录</summary>
+                <ol>
+                  {visibleHeadings.map((heading) => (
+                    <li class={`depth-${heading.depth}`}>
+                      <a href={`#${heading.slug}`}>{heading.text}</a>
+                    </li>
+                  ))}
+                </ol>
+              </>
+            </details>
+          </aside>
+        )
+      }
+    </div>
+    {
+      isNovel ? (
+        <nav class="chapter-navigation" aria-label="章节导航">
+          {previousChapter ? (
+            <a href={withBase(routeFor(previousChapter))}>
+              <span>上一章</span>
+              <strong>{previousChapter.data.title}</strong>
+            </a>
+          ) : (
+            <span />
+          )}
+          <a class="chapter-index" href={withBase(`/light-novels/series/${data.series}/`)}>
+            目录
+          </a>
+          {nextChapter ? (
+            <a class="next" href={withBase(routeFor(nextChapter))}>
+              <span>下一章</span>
+              <strong>{nextChapter.data.title}</strong>
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      ) : (
+        <nav class="article-navigation" aria-label="上一篇和下一篇">
+          {previous ? (
+            <a href={withBase(routeFor(previous))}>
+              <span>上一篇</span>
+              <strong>{previous.data.title}</strong>
+            </a>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <a class="next" href={withBase(routeFor(next))}>
+              <span>下一篇</span>
+              <strong>{next.data.title}</strong>
+            </a>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )
+    }
+    {
+      !isNovel && related.length > 0 && (
+        <section class="related">
+          <>
+            <p class="eyebrow">KEEP READING</p>
+            <h2>也许还想读</h2>
+            <div>
+              {related.map((item) => (
+                <a href={withBase(routeFor(item))}>
+                  <span>{sectionInfo[item.data.section].label}</span>
+                  <strong>{item.data.title}</strong>
+                  <p>{item.data.description}</p>
+                </a>
+              ))}
+            </div>
+          </>
+        </section>
+      )
+    }
+  </article>
+  <script>
+    const readerKey = 'yumeno:reader';
+    function applyReader() {
+      const root = document.querySelector<HTMLElement>('.novel-chapter');
+      if (!root) return;
+      let saved: Record<string, number> = {};
+      try {
+        saved = JSON.parse(localStorage.getItem(readerKey) ?? '{}');
+      } catch {}
+      for (const [name, value] of Object.entries(saved)) {
+        root.style.setProperty(`--reader-${name}`, String(value));
+        const input = root.querySelector<HTMLInputElement>(`[data-reader-setting="${name}"]`);
+        if (input) input.value = String(value);
+      }
+    }
+    document.addEventListener('input', (event) => {
+      const input = (event.target as HTMLElement).closest<HTMLInputElement>(
+        '[data-reader-setting]',
+      );
+      const root = document.querySelector<HTMLElement>('.novel-chapter');
+      if (!input || !root) return;
+      const name = input.dataset.readerSetting ?? '';
+      let saved: Record<string, number> = {};
+      try {
+        saved = JSON.parse(localStorage.getItem(readerKey) ?? '{}');
+      } catch {}
+      saved[name] = Number(input.value);
+      localStorage.setItem(readerKey, JSON.stringify(saved));
+      root.style.setProperty(`--reader-${name}`, input.value);
+    });
+    document.addEventListener('astro:page-load', applyReader);
+    applyReader();
+  </script>
+</BaseLayout>

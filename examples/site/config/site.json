@@ -1,0 +1,38 @@
+{
+  "$schema": "../../../schemas/site.schema.json",
+  "name": "Yumeno",
+  "shortName": "Yumeno",
+  "description": "A dreamy publishing space powered by Yumeno.",
+  "language": "zh-CN",
+  "brand": { "mode": "image", "text": "Yumeno", "image": "/yumeno-wordmark.png", "width": 170 },
+  "author": { "name": "Yumeno Writer", "bio": "Writing between code and dreams." },
+  "hero": {
+    "eyebrow": "A PLACE BETWEEN CODE AND DREAMS",
+    "title": "把想法，写进一场不会醒来的梦。",
+    "description": "Yumeno 是一个可配置、可迁移、适合长期写作的开放式发布引擎。"
+  },
+  "navigation": [
+    { "label": "首页", "href": "/" },
+    { "label": "文章", "href": "/articles/" },
+    { "label": "杂笔", "href": "/essays/" },
+    { "label": "游戏", "href": "/games/" },
+    { "label": "动漫", "href": "/anime/" },
+    { "label": "轻小说", "href": "/light-novels/" },
+    { "label": "归档", "href": "/archive/" },
+    { "label": "关于", "href": "/about/" }
+  ],
+  "social": [{ "label": "GitHub", "href": "https://github.com/pixelsama/Yumeno" }],
+  "about": {
+    "title": "关于 Yumeno",
+    "lead": "一套把私人源内容变成公开静态网站的写作引擎。",
+    "paragraphs": [
+      "真实内容可以保留在私有仓库，引擎与生成网站则各自公开。",
+      "配置优先，内容可迁移，页面在必要时保持安静。"
+    ],
+    "interests": ["Astro", "长期写作", "静态发布"],
+    "directions": ["稳定内容模型", "克制的二次元视觉", "可靠的 GitHub Pages 部署"]
+  },
+  "features": { "search": true, "music": false, "sceneSwitcher": true, "imageLightbox": true },
+  "home": { "recentCount": 8, "featuredCount": 1 },
+  "footer": { "copyrightStart": 2026, "note": "Made for durable writing." }
+}

@@ -1,0 +1,43 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import {
+  getAllEntries,
+  dataOf,
+  formatDate,
+  publishedOf,
+  routeFor,
+  sectionInfo,
+} from '@/lib/content';
+import { withBase } from '@/lib/base';
+const entries = await getAllEntries();
+const years = Map.groupBy(entries, (item) => publishedOf(item).getFullYear());
+---
+
+<BaseLayout title="归档" page="archive"
+  ><section class="archive-page page-width">
+    <header class="collection-header">
+      <div><p class="eyebrow">ARCHIVE</p><h1>所有写下的</h1></div><p>
+        按时间回看一条逐渐成形的轨迹。
+      </p>
+    </header>{
+      [...years.entries()]
+        .sort(([a], [b]) => b - a)
+        .map(([year, items]) => (
+          <section class="archive-year">
+            <>
+              <h2>{year}</h2>
+              <ol>
+                {items.map((item) => (
+                  <li>
+                    <time>{formatDate(publishedOf(item))}</time>
+                    <a href={withBase(routeFor(item))}>{dataOf(item).title}</a>
+                    <span>{sectionInfo[dataOf(item).section].label}</span>
+                  </li>
+                ))}
+              </ol>
+            </>
+          </section>
+        ))
+    }
+  </section></BaseLayout
+>

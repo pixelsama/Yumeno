@@ -1,0 +1,51 @@
+<script>
+  async function enhance() {
+    document.querySelectorAll<HTMLElement>('.article-body pre').forEach((pre) => {
+      if (pre.dataset.copyReady) return;
+      pre.dataset.copyReady = 'true';
+      const button = document.createElement('button');
+      button.className = 'copy-code';
+      button.textContent = 'COPY';
+      button.addEventListener('click', async () => {
+        await navigator.clipboard.writeText(pre.querySelector('code')?.textContent ?? '');
+        button.textContent = 'COPIED';
+        setTimeout(() => (button.textContent = 'COPY'), 1200);
+      });
+      pre.append(button);
+    });
+    const diagrams = document.querySelectorAll<HTMLElement>('.mermaid:not([data-processed])');
+    if (diagrams.length) {
+      const mermaid = (await import('mermaid')).default;
+      mermaid.initialize({
+        startOnLoad: false,
+        theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'neutral',
+      });
+      await mermaid.run({ nodes: Array.from(diagrams) });
+    }
+    const progress = document.querySelector<HTMLElement>('.reading-progress span');
+    const article = document.querySelector<HTMLElement>('.article-body');
+    const update = () => {
+      if (!progress || !article) return;
+      const start = article.offsetTop;
+      const length = article.offsetHeight - innerHeight;
+      progress.style.width = `${Math.max(0, Math.min(1, (scrollY - start) / length)) * 100}%`;
+    };
+    addEventListener('scroll', update, { passive: true });
+    update();
+    document.querySelectorAll<HTMLImageElement>('.article-body img').forEach((image) => {
+      image.addEventListener('click', () => {
+        const dialog = document.createElement('dialog');
+        dialog.className = 'lightbox';
+        dialog.innerHTML = `<img src="${image.src}" alt="${image.alt}"><button aria-label="关闭">×</button>`;
+        document.body.append(dialog);
+        dialog.showModal();
+        dialog.addEventListener('click', () => {
+          dialog.close();
+          dialog.remove();
+        });
+      });
+    });
+  }
+  document.addEventListener('astro:page-load', enhance);
+  enhance();
+</script>

@@ -1,0 +1,22 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { siteConfig } from '@/lib/config';
+---
+
+<BaseLayout title="关于" page="about"
+  ><section class="about-page page-width">
+    <header>
+      <p class="eyebrow">ABOUT THIS PLACE</p><h1>{siteConfig.about.title}</h1><p>
+        {siteConfig.about.lead}
+      </p>
+    </header><div class="about-grid">
+      <article>{siteConfig.about.paragraphs.map((paragraph) => <p>{paragraph}</p>)}</article><aside>
+        <section>
+          <h2>兴趣坐标</h2><ul>{siteConfig.about.interests.map((item) => <li>{item}</li>)}</ul>
+        </section><section>
+          <h2>写作方向</h2><ul>{siteConfig.about.directions.map((item) => <li>{item}</li>)}</ul>
+        </section>
+      </aside>
+    </div>
+  </section></BaseLayout
+>

@@ -1,0 +1,147 @@
+---
+import { sceneConfig } from '@/lib/config';
+import { withBase } from '@/lib/base';
+const config = {
+  ...sceneConfig,
+  scenes: sceneConfig.scenes.map((scene) => ({ ...scene, image: withBase(scene.image) })),
+};
+const initial = config.scenes.find((scene) => scene.id === config.fallback) ?? config.scenes[0];
+---
+
+<div
+  transition:persist="scene-backdrop"
+  id="scene-backdrop"
+  class="scene-backdrop"
+  data-scene={initial?.id}
+  aria-hidden="true"
+>
+  {
+    initial && (
+      <img
+        id="scene-image"
+        src={initial.image}
+        alt=""
+        fetchpriority="high"
+        decoding="async"
+        style={`object-position:${initial.focus ?? '50% 50%'}`}
+      />
+    )
+  }
+  <div class="scene-wash"></div>
+</div>
+<script is:inline define:vars={{ configJson: JSON.stringify(config) }}>
+  window.__YUMENO_SCENES__ = JSON.parse(configJson);
+</script>
+<script>
+  declare global {
+    interface Window {
+      __YUMENO_SCENES__?: import('@/lib/types').SceneConfig;
+      __YUMENO_SCENE_BOUND__?: boolean;
+    }
+  }
+  const key = 'yumeno:scene';
+  const dateKey = (date: Date) =>
+    [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-');
+  function context() {
+    return {
+      page: document.body.dataset.page ?? 'page',
+      section: document.body.dataset.section,
+      slot: document.body.dataset.page === 'home' ? 'hero' : 'ambient',
+      theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
+    };
+  }
+  function matches(scene: import('@/lib/types').Scene, now = new Date()) {
+    const c = scene.conditions;
+    if (!c) return true;
+    const x = context();
+    const day = dateKey(now);
+    const hour = now.getHours();
+    if (
+      c.hours &&
+      !c.hours.some(([start, end]) =>
+        start <= end ? hour >= start && hour < end : hour >= start || hour < end,
+      )
+    )
+      return false;
+    if (c.months && !c.months.includes(now.getMonth() + 1)) return false;
+    if (c.dates && !c.dates.includes(day)) return false;
+    if (c.dateRanges && !c.dateRanges.some(([start, end]) => day >= start && day <= end))
+      return false;
+    if (c.weekdays && !c.weekdays.includes(now.getDay())) return false;
+    if (c.themes && !c.themes.includes(x.theme as 'light' | 'dark')) return false;
+    if (c.pages && !c.pages.includes(x.page)) return false;
+    if (c.sections && (!x.section || !c.sections.includes(x.section as never))) return false;
+    if (c.slots && !c.slots.includes(x.slot as 'hero' | 'ambient')) return false;
+    return true;
+  }
+  function hash(value: string) {
+    let h = 2166136261;
+    for (let i = 0; i < value.length; i++) h = Math.imul(h ^ value.charCodeAt(i), 16777619) >>> 0;
+    return h;
+  }
+  function select() {
+    const config = window.__YUMENO_SCENES__;
+    if (!config) return;
+    const manual = localStorage.getItem(key);
+    if (manual && manual !== 'auto') {
+      const found = config.scenes.find((scene) => scene.id === manual);
+      if (found) return found;
+    }
+    const eligible = config.scenes.filter((scene) => matches(scene));
+    if (!eligible.length) return config.scenes.find((scene) => scene.id === config.fallback);
+    const priority = Math.max(...eligible.map((scene) => scene.priority));
+    const pool = eligible.filter((scene) => scene.priority === priority);
+    const total = pool.reduce((sum, scene) => sum + (scene.weight ?? 1), 0);
+    let pick =
+      hash(`${dateKey(new Date())}:${context().page}:${context().section}:${context().theme}`) %
+      total;
+    for (const scene of pool) {
+      pick -= scene.weight ?? 1;
+      if (pick < 0) return scene;
+    }
+    return pool[0];
+  }
+  function apply(scene = select()) {
+    if (!scene) return;
+    const backdrop = document.querySelector<HTMLElement>('#scene-backdrop');
+    const image = document.querySelector<HTMLImageElement>('#scene-image');
+    if (!backdrop || !image) return;
+    image.src = scene.image;
+    image.style.objectPosition = scene.focus ?? '50% 50%';
+    backdrop.dataset.scene = scene.id;
+    backdrop.style.setProperty('--scene-mask', String(scene.mask ?? 0.36));
+    document.documentElement.style.setProperty('--accent', scene.accent ?? '#7470c8');
+    document.documentElement.style.setProperty('--accent-soft', scene.accentSoft ?? '#eeebff');
+    document
+      .querySelectorAll('[data-current-scene]')
+      .forEach((node) => (node.textContent = scene.label));
+    document
+      .querySelectorAll<HTMLElement>('[data-scene-option]')
+      .forEach((node) =>
+        node.setAttribute(
+          'aria-pressed',
+          String(node.dataset.sceneOption === (localStorage.getItem(key) ?? 'auto')),
+        ),
+      );
+  }
+  if (!window.__YUMENO_SCENE_BOUND__) {
+    window.__YUMENO_SCENE_BOUND__ = true;
+    document.addEventListener('click', (event) => {
+      const option = (event.target as HTMLElement).closest<HTMLElement>('[data-scene-option]');
+      if (option) {
+        localStorage.setItem(key, option.dataset.sceneOption ?? 'auto');
+        apply();
+      }
+    });
+    new MutationObserver(() => apply()).observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+  }
+  document.addEventListener('astro:page-load', () => apply());
+  apply();
+</script>

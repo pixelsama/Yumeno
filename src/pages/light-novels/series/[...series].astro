@@ -1,0 +1,64 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getMarkdownEntries, getOriginalChapters, routeFor } from '@/lib/content';
+import { withBase } from '@/lib/base';
+export async function getStaticPaths() {
+  const entries = await getMarkdownEntries();
+  const ids = [
+    ...new Set(
+      entries
+        .filter((item) => item.data.subtype === 'original' && item.data.series)
+        .map((item) => item.data.series!),
+    ),
+  ];
+  return ids.map((series) => ({
+    params: { series },
+    props: { series, chapters: getOriginalChapters(entries, series) },
+  }));
+}
+const { series, chapters } = Astro.props;
+const first = chapters[0]!;
+const volumes = Map.groupBy(chapters, (chapter) => chapter.data.volume ?? '正文');
+---
+
+<BaseLayout
+  title={first.data.seriesTitle ?? series}
+  description={first.data.seriesDescription ?? first.data.description}
+  page="series"
+  section="light-novel"
+  ><section class="series-page page-width">
+    <header class="series-header">
+      <p class="eyebrow">ORIGINAL SERIES</p><h1>{first.data.seriesTitle ?? series}</h1><p>
+        {first.data.seriesDescription ?? first.data.description}
+      </p><div>
+        <span>{chapters.length} 章</span><a href={withBase(routeFor(first))}>从第一章开始 →</a>
+      </div>
+    </header><div class="volume-list">
+      {
+        [...volumes].map(([volume, items]) => (
+          <section>
+            <>
+              <header>
+                <>
+                  <h2>{volume}</h2>
+                  <span>{items.length} 章</span>
+                </>
+              </header>
+              <ol>
+                {items.map((chapter) => (
+                  <li>
+                    <span>{String(chapter.data.chapterOrder ?? 0).padStart(2, '0')}</span>
+                    <a href={withBase(routeFor(chapter))}>
+                      <strong>{chapter.data.title}</strong>
+                      <p>{chapter.data.description}</p>
+                    </a>
+                  </li>
+                ))}
+              </ol>
+            </>
+          </section>
+        ))
+      }
+    </div>
+  </section></BaseLayout
+>

@@ -1,0 +1,12 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { withBase } from '@/lib/base';
+---
+
+<BaseLayout title="没有找到" page="404"
+  ><section class="not-found">
+    <p class="eyebrow">404 · LOST BETWEEN PAGES</p><h1>这一页落在梦的夹缝里了。</h1><p>
+      也许链接已经改变，也许它还没有被写出来。
+    </p><a class="primary-link" href={withBase('/')}>回到首页 →</a>
+  </section></BaseLayout
+>

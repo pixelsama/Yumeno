@@ -1,0 +1,22 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ContentCard from '@/components/ContentCard.astro';
+import { getAllEntries, dataOf } from '@/lib/content';
+export async function getStaticPaths() {
+  const entries = await getAllEntries();
+  const tags = [...new Set(entries.flatMap((item) => dataOf(item).tags))];
+  return tags.map((tag) => ({ params: { tag }, props: { tag } }));
+}
+const { tag } = Astro.props;
+const entries = (await getAllEntries()).filter((item) => dataOf(item).tags.includes(tag));
+---
+
+<BaseLayout title={`#${tag}`} page="tags"
+  ><section class="tag-page page-width">
+    <header class="collection-header">
+      <div><p class="eyebrow">TAG</p><h1>#{tag}</h1><span>{entries.length} 篇</span></div><p>
+        同一个词语连接起来的内容。
+      </p>
+    </header><div class="content-stream">{entries.map((item) => <ContentCard item={item} />)}</div>
+  </section></BaseLayout
+>

@@ -1,0 +1,26 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ContentCard from '@/components/ContentCard.astro';
+import { getAllEntries, dataOf, sectionInfo } from '@/lib/content';
+export async function getStaticPaths() {
+  return Object.entries(sectionInfo).map(([key, info]) => ({
+    params: { section: info.path },
+    props: { key: key as keyof typeof sectionInfo },
+  }));
+}
+const { key } = Astro.props;
+const info = sectionInfo[key];
+const entries = (await getAllEntries()).filter((item) => dataOf(item).section === key);
+---
+
+<BaseLayout title={info.label} description={info.note} page="collection" section={key}
+  ><section class="collection-page page-width">
+    <header class="collection-header">
+      <div>
+        <p class="eyebrow">COLLECTION</p><h1>{info.label}</h1><span
+          >{String(entries.length).padStart(2, '0')} 篇内容</span
+        >
+      </div><p>{info.note}</p>
+    </header><div class="content-stream">{entries.map((item) => <ContentCard item={item} />)}</div>
+  </section></BaseLayout
+>

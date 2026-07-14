@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Yumeno site configuration",
+  "type": "object",
+  "required": [
+    "name",
+    "shortName",
+    "description",
+    "language",
+    "brand",
+    "author",
+    "hero",
+    "navigation",
+    "about",
+    "features",
+    "home",
+    "footer"
+  ],
+  "properties": {
+    "name": { "type": "string" },
+    "shortName": { "type": "string" },
+    "description": { "type": "string" },
+    "language": { "type": "string" },
+    "brand": {
+      "type": "object",
+      "required": ["mode", "text"],
+      "properties": {
+        "mode": { "enum": ["text", "image"] },
+        "text": { "type": "string" },
+        "image": { "type": "string" },
+        "width": { "type": "number", "minimum": 40, "maximum": 400 }
+      }
+    },
+    "author": { "type": "object", "required": ["name", "bio"] },
+    "hero": { "type": "object", "required": ["eyebrow", "title", "description"] },
+    "navigation": { "type": "array" },
+    "social": { "type": "array" },
+    "about": { "type": "object" },
+    "features": { "type": "object" },
+    "home": { "type": "object" },
+    "footer": { "type": "object" }
+  },
+  "additionalProperties": false
+}

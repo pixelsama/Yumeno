@@ -1,0 +1,53 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { htmlContent } from '@/lib/config';
+import { formatDate, sectionInfo } from '@/lib/content';
+import { withBase } from '@/lib/base';
+export function getStaticPaths() {
+  return htmlContent
+    .filter((item) => !item.draft || import.meta.env.DEV)
+    .map((entry) => ({ params: { slug: entry.slug }, props: { entry } }));
+}
+const { entry } = Astro.props;
+---
+
+<BaseLayout
+  title={entry.title}
+  description={entry.description}
+  image={entry.cover}
+  page="html"
+  section={entry.section}
+  type="article"
+  ><article class="html-article" data-pagefind-body>
+    <header class="html-header">
+      <p class="eyebrow">COMPLETE HTML · {sectionInfo[entry.section].label}</p><h1
+        data-pagefind-meta="title"
+      >
+        {entry.title}
+      </h1><p>{entry.description}</p><div>
+        <time>{formatDate(entry.published)}</time><a href={withBase(`/html-docs/${entry.slug}/`)}
+          >独立打开 ↗</a
+        >
+      </div><ul class="tag-list">
+        {
+          entry.tags.map((tag) => (
+            <li>
+              <a href={withBase(`/tags/${encodeURIComponent(tag)}/`)}>#{tag}</a>
+            </li>
+          ))
+        }
+      </ul>
+    </header>{
+      entry.cover && (
+        <figure class="article-cover">
+          <img src={withBase(entry.cover)} alt={entry.title} />
+        </figure>
+      )
+    }<p class="html-search-text">{entry.searchText}</p><iframe
+      class="html-frame"
+      src={withBase(`/html-docs/${entry.slug}/`)}
+      title={entry.title}
+      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      loading="eager"></iframe>
+  </article></BaseLayout
+>

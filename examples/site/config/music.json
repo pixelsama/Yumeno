@@ -1,0 +1,6 @@
+{
+  "$schema": "../../../schemas/music.schema.json",
+  "enabled": false,
+  "initialVolume": 0.4,
+  "tracks": []
+}

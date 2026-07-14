@@ -1,0 +1,20 @@
+{
+  "$schema": "../../../schemas/scenes.schema.json",
+  "fallback": "paper-sky",
+  "stableFor": "day",
+  "scenes": [
+    {
+      "id": "paper-sky",
+      "label": "纸上晴空",
+      "image": "/media/scenes/paper-sky.svg",
+      "alt": "抽象的纸张与天空",
+      "focus": "50% 50%",
+      "mask": 0.34,
+      "accent": "#f06d4f",
+      "accentSoft": "#fff0e8",
+      "priority": 10,
+      "weight": 1,
+      "conditions": { "slots": ["hero"] }
+    }
+  ]
+}

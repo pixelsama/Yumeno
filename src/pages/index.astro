@@ -1,0 +1,71 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import ContentCard from '@/components/ContentCard.astro';
+import { siteConfig } from '@/lib/config';
+import { getAllEntries, dataOf, routeFor, sectionInfo } from '@/lib/content';
+import { withBase } from '@/lib/base';
+const entries = await getAllEntries();
+const latest = new Map<string, (typeof entries)[number]>();
+for (const item of entries) {
+  if (item.kind !== 'markdown' || item.entry.data.subtype !== 'original' || !item.entry.data.series)
+    continue;
+  const old = latest.get(item.entry.data.series);
+  if (
+    !old ||
+    (old.kind === 'markdown' &&
+      (item.entry.data.chapterOrder ?? 0) > (old.entry.data.chapterOrder ?? 0))
+  )
+    latest.set(item.entry.data.series, item);
+}
+const homeEntries = entries.filter(
+  (item) =>
+    item.kind !== 'markdown' ||
+    item.entry.data.subtype !== 'original' ||
+    !item.entry.data.series ||
+    latest.get(item.entry.data.series) === item,
+);
+const hero = homeEntries.find((item) => dataOf(item).featured) ?? homeEntries[0];
+const recent = homeEntries.filter((item) => item !== hero).slice(0, siteConfig.home.recentCount);
+---
+
+<BaseLayout page="home"
+  ><section class="hero">
+    <div class="hero-content">
+      <p class="eyebrow">{siteConfig.hero.eyebrow}</p><h1>{siteConfig.hero.title}</h1><p>
+        {siteConfig.hero.description}
+      </p><div class="hero-actions">
+        {
+          hero && (
+            <a class="primary-link" href={withBase(routeFor(hero))}>
+              阅读最新内容 <span>→</span>
+            </a>
+          )
+        }<a class="quiet-link" href="#recent">向下看看</a>
+      </div>
+    </div><div class="hero-scene-note">
+      <span>SCENE</span><strong data-current-scene>自动</strong><span>· 随时间与主题变化</span>
+    </div><a href="#recent" class="scroll-cue">SCROLL ↓</a>
+  </section><section id="recent" class="home-content page-width">
+    <header class="section-heading">
+      <div><p class="eyebrow">RECENT WRITING</p><h2>最近写下的</h2></div><p>
+        不是陈列柜，是一条仍在生长的阅读流。
+      </p>
+    </header>{hero && <ContentCard item={hero} featured />}<div class="content-stream">
+      {recent.map((item) => <ContentCard item={item} />)}
+    </div>
+  </section><section class="section-ledger page-width">
+    <div><p class="eyebrow">BY SHELF</p><h2>沿着兴趣继续</h2></div><nav>
+      {
+        Object.values(sectionInfo).map((section) => (
+          <a href={withBase(`/${section.path}/`)}>
+            <>
+              <span>{section.label}</span>
+              <p>{section.note}</p>
+              <b>↗</b>
+            </>
+          </a>
+        ))
+      }
+    </nav>
+  </section></BaseLayout
+>

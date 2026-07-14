@@ -1,0 +1,149 @@
+---
+import { siteConfig, sceneConfig } from '@/lib/config';
+import { withBase } from '@/lib/base';
+const currentPath = Astro.url.pathname;
+const active = (href: string) =>
+  href === '/' ? currentPath === withBase('/') : currentPath.startsWith(withBase(href));
+const brand = siteConfig.brand;
+---
+
+<header class="site-header">
+  <a
+    class:list={['brand', { 'brand-image': brand.mode === 'image' }]}
+    href={withBase('/')}
+    aria-label={`${brand.text} 首页`}
+  >
+    {
+      brand.mode === 'image' && brand.image ? (
+        <img
+          src={withBase(brand.image)}
+          alt={brand.text}
+          style={`--brand-width:${brand.width ?? 168}px`}
+        />
+      ) : (
+        <>
+          <>
+            <span class="brand-star" aria-hidden="true">
+              ✦
+            </span>
+            <span>{brand.text}</span>
+          </>
+        </>
+      )
+    }
+  </a>
+  <nav class="desktop-nav" aria-label="主要导航">
+    {
+      siteConfig.navigation.map((item) => (
+        <a href={withBase(item.href)} aria-current={active(item.href) ? 'page' : undefined}>
+          {item.label}
+        </a>
+      ))
+    }
+  </nav>
+  <div class="header-actions">
+    {
+      siteConfig.features.search && (
+        <button
+          class="icon-button search-trigger"
+          type="button"
+          aria-label="打开搜索"
+          title="搜索（Ctrl/⌘ K）"
+        >
+          ⌕
+        </button>
+      )
+    }
+    <button class="icon-button theme-trigger" type="button" aria-label="切换主题" title="切换主题"
+      >◐</button
+    >
+    {
+      siteConfig.features.sceneSwitcher && (
+        <details class="scene-menu">
+          <summary class="icon-button" aria-label="选择场景" title="场景">
+            ◇
+          </summary>
+          <div class="scene-popover">
+            <p>
+              视觉场景 <span data-current-scene />
+            </p>
+            <button type="button" data-scene-option="auto" aria-pressed="true">
+              自动选择
+            </button>
+            {sceneConfig.scenes
+              .filter((scene) => scene.manualSelectable !== false)
+              .map((scene) => (
+                <button type="button" data-scene-option={scene.id} aria-pressed="false">
+                  {scene.label}
+                </button>
+              ))}
+          </div>
+        </details>
+      )
+    }
+    <button
+      class="icon-button menu-trigger"
+      type="button"
+      aria-label="打开菜单"
+      aria-expanded="false"
+      aria-controls="mobile-menu">☰</button
+    >
+  </div>
+  <nav id="mobile-menu" class="mobile-nav" aria-label="移动端导航" hidden>
+    {
+      siteConfig.navigation.map((item) => (
+        <a href={withBase(item.href)} aria-current={active(item.href) ? 'page' : undefined}>
+          {item.label}
+        </a>
+      ))
+    }
+    {
+      siteConfig.features.search && (
+        <button type="button" class="mobile-search search-trigger">
+          搜索站内内容
+        </button>
+      )
+    }
+  </nav>
+</header>
+
+<script>
+  declare global {
+    interface Window {
+      __YUMENO_HEADER_BOUND__?: boolean;
+    }
+  }
+  function applyTheme() {
+    const preference = localStorage.getItem('yumeno:theme') ?? 'system';
+    const dark =
+      preference === 'dark' ||
+      (preference === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.dataset.themePreference = preference;
+  }
+  if (!window.__YUMENO_HEADER_BOUND__) {
+    window.__YUMENO_HEADER_BOUND__ = true;
+    document.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('.theme-trigger')) {
+        const current = document.documentElement.dataset.themePreference ?? 'system';
+        const next = current === 'system' ? 'light' : current === 'light' ? 'dark' : 'system';
+        localStorage.setItem('yumeno:theme', next);
+        applyTheme();
+      }
+      const button = target.closest<HTMLButtonElement>('.menu-trigger');
+      if (button) {
+        const menu = document.querySelector<HTMLElement>('#mobile-menu');
+        if (!menu) return;
+        menu.hidden = !menu.hidden;
+        button.setAttribute('aria-expanded', String(!menu.hidden));
+      }
+      if (target.closest('.mobile-nav a')) {
+        const menu = document.querySelector<HTMLElement>('#mobile-menu');
+        if (menu) menu.hidden = true;
+      }
+    });
+    matchMedia('(prefers-color-scheme: dark)').addEventListener('change', applyTheme);
+  }
+  applyTheme();
+</script>

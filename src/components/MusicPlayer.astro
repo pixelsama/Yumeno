@@ -1,0 +1,201 @@
+---
+import { musicConfig } from '@/lib/config';
+import { withBase } from '@/lib/base';
+const tracks = musicConfig.tracks.map((track) => ({
+  ...track,
+  cover: track.cover ? withBase(track.cover) : undefined,
+  src: track.source === 'local' ? withBase(track.file) : track.url,
+}));
+---
+
+{
+  musicConfig.enabled && (
+    <aside
+      transition:persist="music-player"
+      id="music-player"
+      class="music-player"
+      aria-label="音乐播放器"
+    >
+      <>
+        <audio id="music-audio" preload="metadata" />
+        <button class="player-collapse" type="button" aria-label="展开播放器">
+          <>
+            <span class="record" aria-hidden="true" />
+            <span>背景音乐</span>
+          </>
+        </button>
+        <div class="player-panel" hidden>
+          <>
+            <div class="player-now">
+              <>
+                <span class="record large" aria-hidden="true" />
+                <div>
+                  <>
+                    <small>NOW PLAYING</small>
+                    <strong id="track-title" />
+                    <span id="track-artist" />
+                  </>
+                </div>
+                <button class="player-close" type="button" aria-label="收起播放器">
+                  ×
+                </button>
+              </>
+            </div>
+            <input
+              id="track-progress"
+              type="range"
+              min="0"
+              max="1000"
+              value="0"
+              aria-label="播放进度"
+            />
+            <div class="player-controls">
+              <>
+                <button data-player-action="previous" aria-label="上一首">
+                  ‹
+                </button>
+                <button class="play-toggle" data-player-action="toggle" aria-label="播放">
+                  ▶
+                </button>
+                <button data-player-action="next" aria-label="下一首">
+                  ›
+                </button>
+                <label>
+                  音量{' '}
+                  <input
+                    id="track-volume"
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    aria-label="音量"
+                  />
+                </label>
+              </>
+            </div>
+            <p id="player-error" role="status" />
+          </>
+        </div>
+      </>
+    </aside>
+  )
+}
+<script
+  is:inline
+  define:vars={{ tracksJson: JSON.stringify(tracks), initialVolume: musicConfig.initialVolume }}
+>
+  window.__YUMENO_MUSIC__ = { tracks: JSON.parse(tracksJson), initialVolume };
+</script>
+<script>
+  declare global {
+    interface Window {
+      __YUMENO_MUSIC__?: {
+        tracks: Array<{ title: string; artist: string; src: string }>;
+        initialVolume: number;
+      };
+      __YUMENO_MUSIC_BOUND__?: boolean;
+    }
+  }
+  const stateKey = 'yumeno:music';
+  function setup() {
+    const config = window.__YUMENO_MUSIC__;
+    const audio = document.querySelector<HTMLAudioElement>('#music-audio');
+    if (!config || !audio || window.__YUMENO_MUSIC_BOUND__) return;
+    const music = config;
+    const playerAudio = audio;
+    window.__YUMENO_MUSIC_BOUND__ = true;
+    let state = { index: 0, volume: music.initialVolume, time: 0, playing: false, open: false };
+    try {
+      state = { ...state, ...JSON.parse(localStorage.getItem(stateKey) ?? '{}') };
+    } catch {}
+    const player = document.querySelector<HTMLElement>('#music-player');
+    const panel = player?.querySelector<HTMLElement>('.player-panel');
+    const title = player?.querySelector<HTMLElement>('#track-title');
+    const artist = player?.querySelector<HTMLElement>('#track-artist');
+    const progress = player?.querySelector<HTMLInputElement>('#track-progress');
+    const volume = player?.querySelector<HTMLInputElement>('#track-volume');
+    const error = player?.querySelector<HTMLElement>('#player-error');
+    const toggle = player?.querySelector<HTMLElement>('.play-toggle');
+    const save = () => localStorage.setItem(stateKey, JSON.stringify(state));
+    function load(restore = true) {
+      const track = music.tracks[state.index % music.tracks.length];
+      if (!track) return;
+      playerAudio.src = track.src;
+      playerAudio.volume = state.volume;
+      if (title) title.textContent = track.title;
+      if (artist) artist.textContent = track.artist;
+      if (volume) volume.value = String(state.volume);
+      if (panel) panel.hidden = !state.open;
+      playerAudio.addEventListener(
+        'loadedmetadata',
+        () => {
+          if (restore && state.time < playerAudio.duration) playerAudio.currentTime = state.time;
+        },
+        { once: true },
+      );
+    }
+    async function play() {
+      try {
+        await playerAudio.play();
+        state.playing = true;
+        if (toggle) toggle.textContent = '❚❚';
+        if (error) error.textContent = '';
+        save();
+      } catch {
+        state.playing = false;
+        if (error) error.textContent = '浏览器阻止了播放，或远程音频暂时不可用。';
+      }
+    }
+    function next(delta = 1) {
+      state.index = (state.index + delta + music.tracks.length) % music.tracks.length;
+      state.time = 0;
+      load(false);
+      play();
+    }
+    player?.addEventListener('click', (event) => {
+      const target = event.target as HTMLElement;
+      if (target.closest('.player-collapse')) {
+        state.open = true;
+        if (panel) panel.hidden = false;
+        save();
+      }
+      if (target.closest('.player-close')) {
+        state.open = false;
+        if (panel) panel.hidden = true;
+        save();
+      }
+      const action = target.closest<HTMLElement>('[data-player-action]')?.dataset.playerAction;
+      if (action === 'toggle') playerAudio.paused ? play() : playerAudio.pause();
+      if (action === 'next') next(1);
+      if (action === 'previous') next(-1);
+    });
+    progress?.addEventListener('input', () => {
+      if (playerAudio.duration)
+        playerAudio.currentTime = (Number(progress.value) / 1000) * playerAudio.duration;
+    });
+    volume?.addEventListener('input', () => {
+      state.volume = Number(volume.value);
+      playerAudio.volume = state.volume;
+      save();
+    });
+    playerAudio.addEventListener('timeupdate', () => {
+      state.time = playerAudio.currentTime;
+      if (progress && playerAudio.duration)
+        progress.value = String(
+          Math.round((playerAudio.currentTime / playerAudio.duration) * 1000),
+        );
+    });
+    playerAudio.addEventListener('pause', () => {
+      state.playing = false;
+      if (toggle) toggle.textContent = '▶';
+      save();
+    });
+    playerAudio.addEventListener('ended', () => next(1));
+    playerAudio.addEventListener('error', () => {
+      if (error) error.textContent = '这首音频无法加载，可以切换下一首。';
+    });
+    load();
+  }
+  document.addEventListener('astro:page-load', setup);
+  setup();
+</script>

@@ -1,0 +1,25 @@
+---
+import { siteConfig } from '@/lib/config';
+import { withBase } from '@/lib/base';
+const year = new Date().getFullYear();
+const years =
+  year === siteConfig.footer.copyrightStart
+    ? `${year}`
+    : `${siteConfig.footer.copyrightStart}–${year}`;
+---
+
+<footer class="site-footer">
+  <div>
+    <span aria-hidden="true">✦</span><strong>{siteConfig.name}</strong><span
+      >© {years} {siteConfig.author.name}</span
+    >
+  </div><p>{siteConfig.footer.note}</p><nav aria-label="页脚导航">
+    <a href={withBase('/rss.xml')}>RSS</a>{
+      siteConfig.social.map((item) => (
+        <a href={item.href} rel="me noreferrer">
+          {item.label}
+        </a>
+      ))
+    }
+  </nav>
+</footer>

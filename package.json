@@ -1,0 +1,40 @@
+{
+  "name": "yumeno",
+  "version": "0.1.0",
+  "description": "An open-source publishing engine for private content and public static sites.",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "prepare:site": "node scripts/prepare-site.mjs",
+    "predev": "npm run prepare:site",
+    "dev": "astro dev",
+    "precheck": "npm run prepare:site",
+    "check": "astro check",
+    "prebuild": "npm run prepare:site",
+    "build": "node scripts/clean-dist.mjs && astro build && node scripts/finalize-html.mjs && pagefind --site dist && node scripts/check-build.mjs",
+    "preview": "astro preview",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "dependencies": {
+    "@astrojs/markdown-remark": "latest",
+    "@astrojs/rss": "latest",
+    "@astrojs/sitemap": "latest",
+    "astro": "latest",
+    "mermaid": "latest",
+    "rehype-katex": "latest",
+    "remark-gfm": "latest",
+    "remark-math": "latest"
+  },
+  "devDependencies": {
+    "@astrojs/check": "latest",
+    "pagefind": "latest",
+    "prettier": "latest",
+    "prettier-plugin-astro": "latest",
+    "typescript": "latest"
+  }
+}

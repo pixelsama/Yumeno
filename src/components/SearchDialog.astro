@@ -1,0 +1,87 @@
+---
+import { withBase } from '@/lib/base';
+const pagefindUrl = withBase('/pagefind/pagefind.js');
+---
+
+<dialog
+  id="search-dialog"
+  class="search-dialog"
+  aria-labelledby="search-title"
+  data-pagefind-url={pagefindUrl}
+>
+  <div class="search-panel">
+    <header>
+      <div>
+        <span class="eyebrow">SEARCH THE ARCHIVE</span><h2 id="search-title">寻找一篇文字</h2>
+      </div><button type="button" class="icon-button search-close" aria-label="关闭搜索">×</button>
+    </header><label class="search-field"
+      ><span>⌕</span><input
+        id="search-input"
+        type="search"
+        placeholder="标题、正文、标签……"
+        autocomplete="off"
+      /><kbd>ESC</kbd></label
+    ><p id="search-status" class="search-status">输入关键词开始搜索；支持中文。</p><ol
+      id="search-results"
+      class="search-results"
+    >
+    </ol>
+  </div>
+</dialog>
+<script is:inline>
+  let pagefind;
+  const dialog = document.querySelector('#search-dialog');
+  const pagefindUrl = dialog?.getAttribute('data-pagefind-url');
+  const input = document.querySelector('#search-input');
+  const results = document.querySelector('#search-results');
+  const status = document.querySelector('#search-status');
+  async function openSearch() {
+    dialog?.showModal();
+    input?.focus();
+    if (!pagefind) {
+      try {
+        pagefind = await import(/* @vite-ignore */ pagefindUrl);
+        await pagefind.init();
+      } catch {
+        status.textContent = '搜索索引仅在完成生产构建后可用。';
+      }
+    }
+  }
+  async function search() {
+    const query = input.value.trim();
+    if (!query || !pagefind) {
+      results.innerHTML = '';
+      status.textContent = '输入关键词开始搜索；支持中文。';
+      return;
+    }
+    const response = await pagefind.search(query);
+    const items = await Promise.all(response.results.slice(0, 8).map((item) => item.data()));
+    results.innerHTML = items
+      .map(
+        (item) =>
+          `<li><a href="${item.url}"><strong>${item.meta.title ?? item.url}</strong><p>${item.excerpt}</p></a></li>`,
+      )
+      .join('');
+    status.textContent = `找到 ${response.results.length} 个结果`;
+  }
+  document.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target.closest('.search-trigger')) openSearch();
+    if (target.closest('.search-close')) dialog?.close();
+  });
+  document.addEventListener('keydown', (event) => {
+    if (
+      (event.metaKey || event.ctrlKey) &&
+      event.key.toLowerCase() === 'k' &&
+      !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName)
+    ) {
+      event.preventDefault();
+      openSearch();
+    }
+    if (event.key === 'Escape') dialog?.close();
+  });
+  input?.addEventListener('input', search);
+  dialog?.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+</script>

@@ -1,0 +1,27 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import { getAllEntries, dataOf } from '@/lib/content';
+import { withBase } from '@/lib/base';
+const counts = new Map<string, number>();
+for (const item of await getAllEntries())
+  for (const tag of dataOf(item).tags) counts.set(tag, (counts.get(tag) ?? 0) + 1);
+---
+
+<BaseLayout title="标签" page="tags"
+  ><section class="tag-page page-width">
+    <header class="collection-header">
+      <div><p class="eyebrow">TAGS</p><h1>标签</h1></div><p>从主题重新进入内容。</p>
+    </header><div class="tag-cloud">
+      {
+        [...counts]
+          .sort((a, b) => b[1] - a[1])
+          .map(([tag, count]) => (
+            <a href={withBase(`/tags/${encodeURIComponent(tag)}/`)}>
+              #{tag}
+              <span>{count}</span>
+            </a>
+          ))
+      }
+    </div>
+  </section></BaseLayout
+>
