@@ -10,7 +10,7 @@ import {
 } from '@/lib/content';
 import { withBase } from '@/lib/base';
 const entries = await getAllEntries();
-const years = Map.groupBy(entries, (item) => publishedOf(item).getFullYear());
+const years = Map.groupBy(entries, (item) => publishedOf(item).getUTCFullYear());
 ---
 
 <BaseLayout title="归档" page="archive"

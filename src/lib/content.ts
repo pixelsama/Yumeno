@@ -48,6 +48,7 @@ export function formatDate(value: Date | string): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
+    timeZone: 'UTC',
   }).format(typeof value === 'string' ? new Date(value) : value);
 }
 export function readingMinutes(body: string): number {
