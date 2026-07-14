@@ -128,7 +128,7 @@ if (data.section === 'anime') {
         </div>
       )
     }
-    <div class="article-grid">
+    <div class:list={['article-grid', { solo: visibleHeadings.length === 0 }]}>
       <div class="article-body"><slot /></div>{
         visibleHeadings.length > 0 && (
           <aside class="toc">
@@ -171,7 +171,7 @@ if (data.section === 'anime') {
             <span />
           )}
         </nav>
-      ) : (
+      ) : previous || next ? (
         <nav class="article-navigation" aria-label="上一篇和下一篇">
           {previous ? (
             <a href={withBase(routeFor(previous))}>
@@ -190,7 +190,7 @@ if (data.section === 'anime') {
             <span />
           )}
         </nav>
-      )
+      ) : null
     }
     {
       !isNovel && related.length > 0 && (

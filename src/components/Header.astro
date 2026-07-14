@@ -50,18 +50,27 @@ const brand = siteConfig.brand;
           aria-label="打开搜索"
           title="搜索（Ctrl/⌘ K）"
         >
-          ⌕
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="5.75" />
+            <path d="m15 15 4.25 4.25" />
+          </svg>
         </button>
       )
     }
     <button class="icon-button theme-trigger" type="button" aria-label="切换主题" title="切换主题"
-      >◐</button
+      ><svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="7.5"></circle>
+        <path d="M12 4.5a7.5 7.5 0 0 0 0 15z" class="theme-half"></path>
+      </svg></button
     >
     {
       siteConfig.features.sceneSwitcher && (
         <details class="scene-menu">
           <summary class="icon-button" aria-label="选择场景" title="场景">
-            ◇
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="m11.5 3 1.7 5.3 5.3 1.7-5.3 1.7-1.7 5.3-1.7-5.3L4.5 10l5.3-1.7L11.5 3z" />
+              <path d="m18.5 15 .7 2.1 2.1.7-2.1.7-.7 2.1-.7-2.1-2.1-.7 2.1-.7.7-2.1z" />
+            </svg>
           </summary>
           <div class="scene-popover">
             <p>
@@ -86,7 +95,10 @@ const brand = siteConfig.brand;
       type="button"
       aria-label="打开菜单"
       aria-expanded="false"
-      aria-controls="mobile-menu">☰</button
+      aria-controls="mobile-menu"
+      ><svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M5 7h14M5 12h14M5 17h14"></path>
+      </svg></button
     >
   </div>
   <nav id="mobile-menu" class="mobile-nav" aria-label="移动端导航" hidden>

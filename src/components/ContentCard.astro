@@ -16,7 +16,10 @@ const { item, featured = false } = Astro.props;
 const data = dataOf(item);
 ---
 
-<article class:list={['content-card', { featured }]} data-section={data.section}>
+<article
+  class:list={['content-card', { featured, 'has-cover': Boolean(data.cover) }]}
+  data-section={data.section}
+>
   {
     data.cover && (
       <a class="card-cover" href={withBase(routeFor(item))} aria-hidden="true" tabindex="-1">
