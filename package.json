@@ -25,7 +25,6 @@
     "@astrojs/rss": "latest",
     "@astrojs/sitemap": "latest",
     "astro": "latest",
-    "mermaid": "latest",
     "rehype-katex": "latest",
     "remark-gfm": "latest",
     "remark-math": "latest",
@@ -33,6 +32,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "latest",
+    "hast-util-from-html": "^2.0.3",
+    "jsdom": "^29.1.1",
+    "mermaid": "latest",
     "pagefind": "latest",
     "prettier": "latest",
     "prettier-plugin-astro": "latest",

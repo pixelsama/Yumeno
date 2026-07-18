@@ -2,12 +2,28 @@
   declare global {
     interface Window {
       __YUMENO_ENHANCE_ABORT__?: AbortController;
+      __YUMENO_OBSERVERS__?: IntersectionObserver[];
     }
   }
+  const REVEAL_SELECTOR = [
+    '.content-card',
+    '.section-heading',
+    '.section-ledger',
+    '.collection-header',
+    '.series-header',
+    '.archive-year',
+    '.tag-cloud a',
+    '.volume-list section',
+    '.related > div > a',
+    '.about-grid > *',
+    '.html-frame',
+  ].join(',');
   async function enhance() {
     window.__YUMENO_ENHANCE_ABORT__?.abort();
     const controller = new AbortController();
     window.__YUMENO_ENHANCE_ABORT__ = controller;
+    for (const observer of window.__YUMENO_OBSERVERS__ ?? []) observer.disconnect();
+    window.__YUMENO_OBSERVERS__ = [];
     document.querySelectorAll<HTMLElement>('.article-body pre').forEach((pre) => {
       if (pre.dataset.copyReady) return;
       pre.dataset.copyReady = 'true';
@@ -21,38 +37,81 @@
       });
       pre.append(button);
     });
-    const diagrams = document.querySelectorAll<HTMLElement>('.mermaid:not([data-processed])');
-    if (diagrams.length) {
-      const mermaid = (await import('mermaid')).default;
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'neutral',
-      });
-      await mermaid.run({ nodes: Array.from(diagrams) });
-    }
     const progress = document.querySelector<HTMLElement>('.reading-progress span');
     const article = document.querySelector<HTMLElement>('.article-body');
+    let ticking = false;
     const update = () => {
+      ticking = false;
       if (!progress || !article) return;
       const start = article.offsetTop;
       const length = article.offsetHeight - innerHeight;
-      progress.style.width = `${Math.max(0, Math.min(1, (scrollY - start) / length)) * 100}%`;
+      const ratio = Math.max(0, Math.min(1, (scrollY - start) / length));
+      progress.style.transform = `scaleX(${ratio})`;
     };
-    addEventListener('scroll', update, { passive: true, signal: controller.signal });
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    };
+    addEventListener('scroll', onScroll, { passive: true, signal: controller.signal });
     update();
     document.querySelectorAll<HTMLImageElement>('.article-body img').forEach((image) => {
+      if (image.dataset.lightboxReady) return;
+      image.dataset.lightboxReady = 'true';
       image.addEventListener('click', () => {
         const dialog = document.createElement('dialog');
         dialog.className = 'lightbox';
         dialog.innerHTML = `<img src="${image.src}" alt="${image.alt}"><button aria-label="关闭">×</button>`;
         document.body.append(dialog);
         dialog.showModal();
-        dialog.addEventListener('click', () => {
-          dialog.close();
-          dialog.remove();
-        });
+        dialog.addEventListener('click', () => dialog.close());
+        dialog.addEventListener('close', () => dialog.remove(), { once: true });
       });
     });
+    // Scroll reveal: elements start hidden via CSS once tagged, then fade up.
+    const targets = Array.from(document.querySelectorAll<HTMLElement>(REVEAL_SELECTOR));
+    if (targets.length) {
+      const reveal = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            (entry.target as HTMLElement).classList.add('revealed');
+            reveal.unobserve(entry.target);
+          }
+        },
+        { rootMargin: '0px 0px -8% 0px', threshold: 0.05 },
+      );
+      targets.forEach((element, index) => {
+        element.setAttribute('data-reveal', '');
+        element.style.setProperty('--reveal-delay', `${(index % 4) * 60}ms`);
+        reveal.observe(element);
+      });
+      window.__YUMENO_OBSERVERS__.push(reveal);
+    }
+    // TOC scroll-spy: highlight the section currently at the reading position.
+    const tocLinks = Array.from(document.querySelectorAll<HTMLAnchorElement>('.toc a[href^="#"]'));
+    if (tocLinks.length) {
+      const headings = tocLinks
+        .map((link) => document.getElementById(decodeURIComponent(link.hash.slice(1))))
+        .filter((heading): heading is HTMLElement => Boolean(heading));
+      const spy = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            if (!entry.isIntersecting) continue;
+            tocLinks.forEach((link) =>
+              link.classList.toggle(
+                'active',
+                decodeURIComponent(link.hash) === `#${entry.target.id}`,
+              ),
+            );
+          }
+        },
+        { rootMargin: '-88px 0px -70% 0px' },
+      );
+      headings.forEach((heading) => spy.observe(heading));
+      window.__YUMENO_OBSERVERS__.push(spy);
+    }
   }
   document.addEventListener('astro:page-load', enhance);
   enhance();

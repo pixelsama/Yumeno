@@ -22,6 +22,21 @@ if (existsSync(path.join(source, 'public', 'media'))) {
   });
 }
 
+// Vendor KaTeX assets (woff2 only) so article pages can opt into math styles
+// without bundling the CSS/fonts into every page.
+const katexDist = path.join(root, 'node_modules', 'katex', 'dist');
+const katexVendor = path.join(root, 'public', 'vendor', 'katex');
+if (existsSync(katexDist)) {
+  await rm(katexVendor, { recursive: true, force: true });
+  await mkdir(path.join(katexVendor, 'fonts'), { recursive: true });
+  await cp(path.join(katexDist, 'katex.min.css'), path.join(katexVendor, 'katex.min.css'));
+  for (const file of await readdir(path.join(katexDist, 'fonts'))) {
+    if (file.endsWith('.woff2')) {
+      await cp(path.join(katexDist, 'fonts', file), path.join(katexVendor, 'fonts', file));
+    }
+  }
+}
+
 const htmlRoot = path.join(target, 'content', 'html');
 const manifest = [];
 if (existsSync(htmlRoot)) {

@@ -2,7 +2,6 @@
 import BaseLayout from './BaseLayout.astro';
 import { withBase } from '@/lib/base';
 import { responsiveImage } from '@/lib/images';
-import 'katex/dist/katex.min.css';
 import {
   formatDate,
   routeFor,
@@ -30,6 +29,12 @@ const previousChapter = current > 0 ? seriesChapters[current - 1] : undefined;
 const nextChapter = current >= 0 ? seriesChapters[current + 1] : undefined;
 const visibleHeadings = headings.filter((heading) => heading.depth >= 2 && heading.depth <= 3);
 const coverImage = data.cover ? responsiveImage(data.cover) : undefined;
+// remark-math/rehype-katex only render when math delimiters exist, so the
+// KaTeX stylesheet is opt-in per article instead of loaded on every page.
+const hasMath =
+  /\$\$[\s\S]+?\$\$|\\\([\s\S]+?\\\)|\\\[[\s\S]+?\\\]|(?<![\\$])\$(?!\$)[^\n$]+?\$(?!\$)/.test(
+    body,
+  );
 const facts: Array<{ label: string; value: string }> = [];
 if (data.section === 'game') {
   if (data.gameTitle) facts.push({ label: '作品', value: data.gameTitle });
@@ -56,6 +61,7 @@ if (data.section === 'anime') {
   published={data.published}
   updated={data.updated}
 >
+  {hasMath && <link slot="head" rel="stylesheet" href={withBase('/vendor/katex/katex.min.css')} />}
   <article
     class:list={['article-page', { 'novel-chapter': isNovel }]}
     data-pagefind-body
@@ -79,7 +85,9 @@ if (data.section === 'anime') {
         }
       </nav><p class="eyebrow">
         {isNovel ? `${data.volume ?? '正文'} · ${data.chapter ?? ''}` : section.label}
-      </p><h1 data-pagefind-meta="title">{data.title}</h1><p class="article-deck">
+      </p><h1 data-pagefind-meta="title" transition:name={`title-${data.slug}`}>{data.title}</h1><p
+        class="article-deck"
+      >
         {data.description}
       </p><div class="article-meta">
         <time datetime={data.published.toISOString()}>{formatDate(data.published)}</time>{
@@ -118,6 +126,7 @@ if (data.section === 'anime') {
             alt={data.title}
             fetchpriority="high"
             decoding="async"
+            transition:name={`cover-${data.slug}`}
           />
         </figure>
       )

@@ -25,7 +25,7 @@ Yumeno is the **public engine**. Never add a real site's private writing, drafts
 - Sections: `article`, `essay`, `game`, `anime`, `light-novel`.
 - Original novels use `subtype: original`, `series`, `seriesTitle`, `volume`, `chapter`, `chapterOrder`—one Markdown file per chapter.
 - Complete HTML: pair `name.html` with `name.meta.json`; adjacent CSS/JS are copied. It participates in archive, tags, RSS, SEO and Pagefind.
-- Standard GFM, math, Mermaid, code fences, footnotes and raw HTML are supported. Bilibili embeds use a normal responsive iframe.
+- Standard GFM, math, Mermaid, code fences, footnotes and raw HTML are supported. Bilibili embeds use a normal responsive iframe. Mermaid diagrams are pre-rendered to paired light/dark SVG at build time (no client-side runtime); KaTeX CSS loads only on pages that actually contain math.
 
 ## Changes and commits
 
