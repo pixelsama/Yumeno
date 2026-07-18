@@ -1,0 +1,118 @@
+---
+import { sceneRuntimeConfig } from '@/lib/scenes';
+interface Props {
+  page?: string;
+  section?: string | undefined;
+}
+const { page = 'page', section } = Astro.props;
+const config = sceneRuntimeConfig();
+const initial = config.scenes.find((scene) => scene.id === config.fallback) ?? config.scenes[0];
+---
+
+<script
+  is:inline
+  define:vars={{
+    configJson: JSON.stringify(config),
+    initialPage: page,
+    initialSection: section ?? '',
+    fallbackId: initial?.id ?? '',
+  }}
+>
+  (() => {
+    // Runs before any stylesheet: picks the same scene the backdrop will use
+    // and preloads it, so the hero image starts downloading immediately.
+    // It also installs the shared scene library consumed by SceneBackdrop.
+    if (window.__YUMENO_SCENE_PICK__) return;
+    const config = JSON.parse(configJson);
+    window.__YUMENO_SCENES__ = config;
+    const key = 'yumeno:scene';
+    const dateKey = (date) =>
+      [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0'),
+      ].join('-');
+    const hash = (value) => {
+      let result = 2166136261;
+      for (let index = 0; index < value.length; index += 1)
+        result = Math.imul(result ^ value.charCodeAt(index), 16777619) >>> 0;
+      return result;
+    };
+    const fallback = () =>
+      config.scenes.find((scene) => scene.id === config.fallback) || config.scenes[0];
+    const matches = (scene, ctx, now = new Date()) => {
+      const conditions = scene.conditions;
+      if (!conditions) return true;
+      const day = dateKey(now);
+      const hour = now.getHours();
+      if (
+        conditions.hours &&
+        !conditions.hours.some(([start, end]) =>
+          start <= end ? hour >= start && hour < end : hour >= start || hour < end,
+        )
+      )
+        return false;
+      if (conditions.months && !conditions.months.includes(now.getMonth() + 1)) return false;
+      if (conditions.dates && !conditions.dates.includes(day)) return false;
+      if (
+        conditions.dateRanges &&
+        !conditions.dateRanges.some(([start, end]) => day >= start && day <= end)
+      )
+        return false;
+      if (conditions.weekdays && !conditions.weekdays.includes(now.getDay())) return false;
+      if (conditions.themes && !conditions.themes.includes(ctx.theme)) return false;
+      if (conditions.pages && !conditions.pages.includes(ctx.page)) return false;
+      if (conditions.sections && (!ctx.section || !conditions.sections.includes(ctx.section)))
+        return false;
+      if (conditions.slots && !conditions.slots.includes(ctx.slot)) return false;
+      return true;
+    };
+    const pick = (ctx) => {
+      try {
+        const manual = localStorage.getItem(key);
+        if (manual && manual !== 'auto') {
+          const found = config.scenes.find((scene) => scene.id === manual);
+          if (found) return found;
+        }
+      } catch {}
+      const eligible = config.scenes.filter((scene) => matches(scene, ctx));
+      if (!eligible.length) return fallback();
+      const priority = Math.max(...eligible.map((scene) => scene.priority));
+      const pool = eligible.filter((scene) => scene.priority === priority);
+      const total = pool.reduce((sum, scene) => sum + (scene.weight || 1), 0);
+      let roll = hash(`${dateKey(new Date())}:${ctx.page}:${ctx.section}:${ctx.theme}`) % total;
+      for (const scene of pool) {
+        roll -= scene.weight || 1;
+        if (roll < 0) return scene;
+      }
+      return pool[0];
+    };
+    window.__YUMENO_SCENE_PICK__ = pick;
+    window.__YUMENO_SCENE_FALLBACK__ = fallback;
+    let theme = 'light';
+    try {
+      const preference = localStorage.getItem('yumeno:theme') ?? 'system';
+      theme =
+        preference === 'dark' ||
+        (preference === 'system' && matchMedia('(prefers-color-scheme:dark)').matches)
+          ? 'dark'
+          : 'light';
+    } catch {}
+    const scene = pick({
+      page: initialPage,
+      section: initialSection || undefined,
+      slot: initialPage === 'home' ? 'hero' : 'ambient',
+      theme,
+    });
+    if (scene?.image) {
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = scene.image;
+      if (scene.srcset) link.setAttribute('imagesrcset', scene.srcset);
+      link.setAttribute('imagesizes', '100vw');
+      link.setAttribute('fetchpriority', 'high');
+      document.head.append(link);
+    }
+  })();
+</script>

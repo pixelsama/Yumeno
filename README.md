@@ -2,7 +2,7 @@
 
 ![Yumeno](public/yumeno-wordmark.png)
 
-Yumeno is an open-source Astro publishing engine for keeping site source private while publishing a beautiful static website. It is designed for long-form Chinese writing, games, anime, light novels, full HTML documents, configurable visual scenes, and persistent music.
+Yumeno is an open-source Astro publishing engine for keeping site source private while publishing a beautiful static website. It is designed for long-form Chinese writing, games, anime, light novels, full HTML documents, configurable visual scenes, and persistent music. Chinese serif typography (Source Han Serif SC VF, SIL OFL) is self-hosted as on-demand unicode-range subsets — see `public/fonts/FONTS.md`.
 
 ## Run the demo
 

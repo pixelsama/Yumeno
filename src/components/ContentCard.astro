@@ -35,6 +35,7 @@ const coverImage = data.cover ? responsiveImage(data.cover) : undefined;
           loading="lazy"
           fetchpriority="low"
           decoding="async"
+          transition:name={`cover-${data.slug}`}
         />
       </a>
     )
@@ -45,7 +46,9 @@ const coverImage = data.cover ? responsiveImage(data.cover) : undefined;
         datetime={publishedOf(item).toISOString()}>{formatDate(publishedOf(item))}</time
       >{item.kind === 'html' && <span>HTML</span>}
     </div>
-    <h2><a href={withBase(routeFor(item))}>{data.title}</a></h2><p>{data.description}</p>
+    <h2>
+      <a href={withBase(routeFor(item))} transition:name={`title-${data.slug}`}>{data.title}</a>
+    </h2><p>{data.description}</p>
     <div class="card-foot">
       <ul aria-label="标签">
         {

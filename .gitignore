@@ -4,6 +4,7 @@ dist/
 .site/
 public/media/
 public/html-docs/
+public/vendor/
 public/*.w*.webp
 public/**/*.w*.webp
 .DS_Store

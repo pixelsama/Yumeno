@@ -1,13 +1,6 @@
 ---
-import { sceneConfig } from '@/lib/config';
-import { responsiveImage } from '@/lib/images';
-const config = {
-  ...sceneConfig,
-  scenes: sceneConfig.scenes.map((scene) => {
-    const image = responsiveImage(scene.image);
-    return { ...scene, image: image.src, srcset: image.srcset };
-  }),
-};
+import { sceneRuntimeConfig } from '@/lib/scenes';
+const config = sceneRuntimeConfig();
 const initial = config.scenes.find((scene) => scene.id === config.fallback) ?? config.scenes[0];
 ---
 
@@ -41,90 +34,46 @@ const initial = config.scenes.find((scene) => scene.id === config.fallback) ?? c
 </div>
 <script is:inline define:vars={{ configJson: JSON.stringify(config) }}>
   (() => {
-    const config = JSON.parse(configJson);
+    // The selection machinery lives in ScenePreload (head, pre-CSS). Reuse it;
+    // fall back to local state only if that script somehow did not run.
+    const config = window.__YUMENO_SCENES__ ?? JSON.parse(configJson);
     window.__YUMENO_SCENES__ = config;
     const key = 'yumeno:scene';
-    const dateKey = (date) =>
-      [
-        date.getFullYear(),
-        String(date.getMonth() + 1).padStart(2, '0'),
-        String(date.getDate()).padStart(2, '0'),
-      ].join('-');
     const context = () => ({
       page: document.body.dataset.page || 'page',
       section: document.body.dataset.section,
       slot: document.body.dataset.page === 'home' ? 'hero' : 'ambient',
       theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
     });
-    const matches = (scene, now = new Date()) => {
-      const conditions = scene.conditions;
-      if (!conditions) return true;
-      const current = context();
-      const day = dateKey(now);
-      const hour = now.getHours();
-      if (
-        conditions.hours &&
-        !conditions.hours.some(([start, end]) =>
-          start <= end ? hour >= start && hour < end : hour >= start || hour < end,
-        )
-      )
-        return false;
-      if (conditions.months && !conditions.months.includes(now.getMonth() + 1)) return false;
-      if (conditions.dates && !conditions.dates.includes(day)) return false;
-      if (
-        conditions.dateRanges &&
-        !conditions.dateRanges.some(([start, end]) => day >= start && day <= end)
-      )
-        return false;
-      if (conditions.weekdays && !conditions.weekdays.includes(now.getDay())) return false;
-      if (conditions.themes && !conditions.themes.includes(current.theme)) return false;
-      if (conditions.pages && !conditions.pages.includes(current.page)) return false;
-      if (
-        conditions.sections &&
-        (!current.section || !conditions.sections.includes(current.section))
-      )
-        return false;
-      if (conditions.slots && !conditions.slots.includes(current.slot)) return false;
-      return true;
-    };
-    const hash = (value) => {
-      let result = 2166136261;
-      for (let index = 0; index < value.length; index += 1)
-        result = Math.imul(result ^ value.charCodeAt(index), 16777619) >>> 0;
-      return result;
-    };
     const fallback = () =>
-      config.scenes.find((scene) => scene.id === config.fallback) || config.scenes[0];
-    const select = () => {
-      try {
-        const manual = localStorage.getItem(key);
-        if (manual && manual !== 'auto') {
-          const found = config.scenes.find((scene) => scene.id === manual);
-          if (found) return found;
-        }
-      } catch {}
-      const eligible = config.scenes.filter((scene) => matches(scene));
-      if (!eligible.length) return fallback();
-      const priority = Math.max(...eligible.map((scene) => scene.priority));
-      const pool = eligible.filter((scene) => scene.priority === priority);
-      const total = pool.reduce((sum, scene) => sum + (scene.weight || 1), 0);
-      let pick =
-        hash(`${dateKey(new Date())}:${context().page}:${context().section}:${context().theme}`) %
-        total;
-      for (const scene of pool) {
-        pick -= scene.weight || 1;
-        if (pick < 0) return scene;
-      }
-      return pool[0];
-    };
+      window.__YUMENO_SCENE_FALLBACK__?.() ??
+      (config.scenes.find((scene) => scene.id === config.fallback) || config.scenes[0]);
+    const select = () => window.__YUMENO_SCENE_PICK__?.(context()) ?? fallback();
     const apply = (scene = select() || fallback()) => {
       const backdrop = document.querySelector('#scene-backdrop');
       const image = document.querySelector('#scene-image');
       if (!scene || !backdrop || !image) return;
-      if (scene.srcset) image.srcset = scene.srcset;
-      else image.removeAttribute('srcset');
-      image.src = scene.image;
-      image.style.objectPosition = scene.focus || '50% 50%';
+      if (image.getAttribute('src') !== scene.image) {
+        backdrop.classList.add('scene-switching');
+        const next = new Image();
+        if (scene.srcset) {
+          next.sizes = '100vw';
+          next.srcset = scene.srcset;
+        }
+        next.onload = () => {
+          if (scene.srcset) image.srcset = scene.srcset;
+          else image.removeAttribute('srcset');
+          image.src = scene.image;
+          image.style.objectPosition = scene.focus || '50% 50%';
+          backdrop.classList.remove('scene-switching');
+        };
+        next.onerror = () => backdrop.classList.remove('scene-switching');
+        next.src = scene.image;
+      } else {
+        if (scene.srcset) image.srcset = scene.srcset;
+        else image.removeAttribute('srcset');
+        image.style.objectPosition = scene.focus || '50% 50%';
+      }
       backdrop.dataset.scene = scene.id;
       backdrop.style.setProperty('--scene-mask', String(scene.mask ?? 0.36));
       document.documentElement.style.setProperty('--accent', scene.accent || '#7470c8');

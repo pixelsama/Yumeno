@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import Header from '@/components/Header.astro';
 import Footer from '@/components/Footer.astro';
 import SceneBackdrop from '@/components/SceneBackdrop.astro';
+import ScenePreload from '@/components/ScenePreload.astro';
 import SearchDialog from '@/components/SearchDialog.astro';
 import MusicPlayer from '@/components/MusicPlayer.astro';
 import ClientEnhancements from '@/components/ClientEnhancements.astro';
@@ -38,12 +39,15 @@ const shareImage = image ? absoluteUrl(image) : undefined;
 <!doctype html>
 <html lang={siteConfig.language}>
   <head
-    ><meta charset="UTF-8" /><meta name="viewport" content="width=device-width" /><meta
-      name="generator"
-      content={Astro.generator}
-    /><title>{fullTitle}</title><meta name="description" content={description} /><link
-      rel="canonical"
-      href={canonical}
+    ><meta charset="UTF-8" /><meta name="viewport" content="width=device-width" /><ScenePreload
+      {page}
+      {section}
+    /><meta name="generator" content={Astro.generator} /><title>{fullTitle}</title><meta
+      name="description"
+      content={description}
+    /><link rel="canonical" href={canonical} /><link
+      rel="stylesheet"
+      href={withBase('/fonts/serif.css')}
     /><link rel="icon" href={withBase('/favicon.svg')} /><link
       rel="alternate"
       type="application/rss+xml"
@@ -59,7 +63,11 @@ const shareImage = image ? absoluteUrl(image) : undefined;
     {updated && <meta property="article:modified_time" content={updated.toISOString()} />}<meta
       name="twitter:card"
       content={shareImage ? 'summary_large_image' : 'summary'}
-    /><ClientRouter fallback="animate" /><script is:inline>
+    /><meta name="theme-color" media="(prefers-color-scheme: light)" content="#fbfaf8" /><meta
+      name="theme-color"
+      media="(prefers-color-scheme: dark)"
+      content="#17171d"
+    /><slot name="head" /><ClientRouter fallback="animate" /><script is:inline>
       try {
         const p = localStorage.getItem('yumeno:theme') ?? 'system';
         const d =

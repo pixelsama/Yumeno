@@ -20,7 +20,7 @@ export default defineConfig({
       remarkPlugins: [remarkGfm, remarkMath],
       rehypePlugins: [rehypeKatex, rehypeMermaidBlock, [rehypeBasePath, { base }]],
     }),
-    shikiConfig: { theme: 'github-light' },
+    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark' } },
   },
   vite: { build: { chunkSizeWarningLimit: 900 } },
 });

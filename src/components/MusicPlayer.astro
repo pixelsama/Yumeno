@@ -147,6 +147,7 @@ const tracks = musicConfig.tracks.map((track) => ({
         await playerAudio.play();
         state.playing = true;
         if (toggle) toggle.textContent = '❚❚';
+        player?.classList.add('is-playing');
         if (error) error.textContent = '';
         save();
       } catch {
@@ -196,6 +197,7 @@ const tracks = musicConfig.tracks.map((track) => ({
     playerAudio.addEventListener('pause', () => {
       state.playing = false;
       if (toggle) toggle.textContent = '▶';
+      player?.classList.remove('is-playing');
       save();
     });
     playerAudio.addEventListener('ended', () => next(1));
