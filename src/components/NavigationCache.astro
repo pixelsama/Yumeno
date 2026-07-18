@@ -1,0 +1,211 @@
+<script>
+  import type { TransitionBeforePreparationEvent } from 'astro:transitions/client';
+
+  type CachedNavigationPage = {
+    html: string;
+    mediaType: DOMParserSupportedType;
+    responseUrl: string;
+  };
+
+  declare global {
+    interface Window {
+      __YUMENO_NAV_CACHE__?: Map<string, Promise<CachedNavigationPage | null>>;
+      __YUMENO_NAV_CACHE_BOUND__?: boolean;
+      __YUMENO_NAV_PENDING_TIMER__?: number;
+      __YUMENO_NAV_PREVIOUS_ACTIVE__?: string[];
+    }
+  }
+
+  const navigationSelector = 'a[data-nav-prefetch]';
+  const transitionSelector = '[name="astro-view-transitions-enabled"]';
+  const cache = (window.__YUMENO_NAV_CACHE__ ??= new Map());
+
+  function cacheKey(href: string | URL) {
+    const url = new URL(href, location.href);
+    url.hash = '';
+    return url.href;
+  }
+
+  function isSlowConnection() {
+    if (!('connection' in navigator)) return false;
+    const connection = navigator.connection as { effectiveType?: string; saveData?: boolean };
+    return Boolean(connection.saveData || /2g/.test(connection.effectiveType ?? ''));
+  }
+
+  function fetchNavigationPage(href: string | URL) {
+    const key = cacheKey(href);
+    const cached = cache.get(key);
+    if (cached) return cached;
+
+    const request = fetch(key, { headers: { Accept: 'text/html' } })
+      .then(async (response): Promise<CachedNavigationPage | null> => {
+        const mediaType = response.headers.get('content-type')?.split(';', 1)[0]?.trim();
+        if (!response.ok || (mediaType !== 'text/html' && mediaType !== 'application/xhtml+xml')) {
+          return null;
+        }
+        return {
+          html: await response.text(),
+          mediaType,
+          responseUrl: response.url,
+        };
+      })
+      .catch(() => null);
+
+    cache.set(key, request);
+    void request.then((page) => {
+      if (!page && cache.get(key) === request) cache.delete(key);
+    });
+    return request;
+  }
+
+  function navigationTargets() {
+    return new Set(
+      Array.from(document.querySelectorAll<HTMLAnchorElement>(navigationSelector), (link) =>
+        cacheKey(link.href),
+      ),
+    );
+  }
+
+  function warmNavigation() {
+    if (isSlowConnection()) return;
+    for (const target of navigationTargets()) void fetchNavigationPage(target);
+  }
+
+  async function preloadNewStyles(nextDocument: Document, responseUrl: string) {
+    const current = new Set(
+      Array.from(
+        document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"][href]'),
+        (link) => cacheKey(link.href),
+      ),
+    );
+    const pending: Promise<void>[] = [];
+    for (const stylesheet of nextDocument.querySelectorAll<HTMLLinkElement>(
+      'link[rel="stylesheet"][href]',
+    )) {
+      const href = new URL(stylesheet.getAttribute('href') ?? '', responseUrl).href;
+      if (current.has(cacheKey(href))) continue;
+      const preload = document.createElement('link');
+      preload.rel = 'preload';
+      preload.as = 'style';
+      preload.href = href;
+      pending.push(
+        new Promise((resolve) => {
+          preload.addEventListener('load', () => resolve(), { once: true });
+          preload.addEventListener('error', () => resolve(), { once: true });
+          document.head.append(preload);
+        }),
+      );
+    }
+    await Promise.all(pending);
+  }
+
+  function setOptimisticActive(href: string) {
+    const key = cacheKey(href);
+    for (const link of document.querySelectorAll<HTMLAnchorElement>(navigationSelector)) {
+      if (cacheKey(link.href) === key) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+  }
+
+  function clearPendingNavigation() {
+    delete document.documentElement.dataset.navigationPending;
+    delete window.__YUMENO_NAV_PREVIOUS_ACTIVE__;
+    if (window.__YUMENO_NAV_PENDING_TIMER__) {
+      window.clearTimeout(window.__YUMENO_NAV_PENDING_TIMER__);
+      delete window.__YUMENO_NAV_PENDING_TIMER__;
+    }
+  }
+
+  function restorePendingNavigation() {
+    const previous = new Set(window.__YUMENO_NAV_PREVIOUS_ACTIVE__ ?? []);
+    for (const link of document.querySelectorAll<HTMLAnchorElement>(navigationSelector)) {
+      if (previous.has(cacheKey(link.href))) link.setAttribute('aria-current', 'page');
+      else link.removeAttribute('aria-current');
+    }
+    clearPendingNavigation();
+  }
+
+  if (!window.__YUMENO_NAV_CACHE_BOUND__) {
+    window.__YUMENO_NAV_CACHE_BOUND__ = true;
+
+    document.addEventListener('pointerover', (event) => {
+      const link = (event.target as Element | null)?.closest<HTMLAnchorElement>(navigationSelector);
+      if (link) void fetchNavigationPage(link.href);
+    });
+    document.addEventListener('focusin', (event) => {
+      const link = (event.target as Element | null)?.closest<HTMLAnchorElement>(navigationSelector);
+      if (link) void fetchNavigationPage(link.href);
+    });
+
+    document.addEventListener('click', (event) => {
+      if (
+        !(event instanceof MouseEvent) ||
+        event.button !== 0 ||
+        event.metaKey ||
+        event.ctrlKey ||
+        event.altKey ||
+        event.shiftKey
+      ) {
+        return;
+      }
+      const link = (event.target as Element | null)?.closest<HTMLAnchorElement>(navigationSelector);
+      if (
+        !link ||
+        link.origin !== location.origin ||
+        cacheKey(link.href) === cacheKey(location.href)
+      ) {
+        return;
+      }
+      if (!('navigationPending' in document.documentElement.dataset)) {
+        window.__YUMENO_NAV_PREVIOUS_ACTIVE__ = Array.from(
+          document.querySelectorAll<HTMLAnchorElement>(
+            `${navigationSelector}[aria-current="page"]`,
+          ),
+          (activeLink) => cacheKey(activeLink.href),
+        );
+      }
+      setOptimisticActive(link.href);
+      document.documentElement.dataset.navigationPending = '';
+      window.clearTimeout(window.__YUMENO_NAV_PENDING_TIMER__);
+      window.__YUMENO_NAV_PENDING_TIMER__ = window.setTimeout(restorePendingNavigation, 15_000);
+    });
+
+    document.addEventListener('astro:before-preparation', (rawEvent) => {
+      const event = rawEvent as TransitionBeforePreparationEvent;
+      if (
+        event.formData ||
+        event.to.origin !== location.origin ||
+        !navigationTargets().has(cacheKey(event.to))
+      ) {
+        return;
+      }
+      const defaultLoader = event.loader;
+      event.loader = async () => {
+        const page = await fetchNavigationPage(event.to);
+        if (!page) {
+          await defaultLoader();
+          return;
+        }
+        if (event.signal.aborted) return;
+        const nextDocument = new DOMParser().parseFromString(page.html, page.mediaType);
+        if (!nextDocument.querySelector(transitionSelector)) {
+          await defaultLoader();
+          return;
+        }
+        nextDocument.querySelectorAll('noscript').forEach((element) => element.remove());
+        const originalHash = event.to.hash;
+        const responseUrl = new URL(page.responseUrl);
+        if (responseUrl.origin === event.to.origin && responseUrl.href !== event.to.href) {
+          event.to = responseUrl;
+          event.to.hash = originalHash;
+        }
+        await preloadNewStyles(nextDocument, page.responseUrl);
+        if (!event.signal.aborted) event.newDocument = nextDocument;
+      };
+    });
+
+    document.addEventListener('astro:after-swap', clearPendingNavigation);
+  }
+
+  window.setTimeout(warmNavigation, 120);
+</script>

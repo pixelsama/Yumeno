@@ -14,6 +14,8 @@ const brandImage = brand.image ? responsiveImage(brand.image) : undefined;
     class:list={['brand', { 'brand-image': brand.mode === 'image' }]}
     href={withBase('/')}
     aria-label={`${brand.text} 首页`}
+    data-nav-prefetch
+    data-astro-prefetch="false"
   >
     {
       brand.mode === 'image' && brandImage ? (
@@ -41,7 +43,12 @@ const brandImage = brand.image ? responsiveImage(brand.image) : undefined;
   <nav class="desktop-nav" aria-label="主要导航">
     {
       siteConfig.navigation.map((item) => (
-        <a href={withBase(item.href)} aria-current={active(item.href) ? 'page' : undefined}>
+        <a
+          href={withBase(item.href)}
+          aria-current={active(item.href) ? 'page' : undefined}
+          data-nav-prefetch
+          data-astro-prefetch="false"
+        >
           {item.label}
         </a>
       ))
@@ -110,7 +117,12 @@ const brandImage = brand.image ? responsiveImage(brand.image) : undefined;
   <nav id="mobile-menu" class="mobile-nav" aria-label="移动端导航" hidden>
     {
       siteConfig.navigation.map((item) => (
-        <a href={withBase(item.href)} aria-current={active(item.href) ? 'page' : undefined}>
+        <a
+          href={withBase(item.href)}
+          aria-current={active(item.href) ? 'page' : undefined}
+          data-nav-prefetch
+          data-astro-prefetch="false"
+        >
           {item.label}
         </a>
       ))

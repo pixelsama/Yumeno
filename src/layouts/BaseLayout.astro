@@ -7,6 +7,7 @@ import ScenePreload from '@/components/ScenePreload.astro';
 import SearchDialog from '@/components/SearchDialog.astro';
 import MusicPlayer from '@/components/MusicPlayer.astro';
 import ClientEnhancements from '@/components/ClientEnhancements.astro';
+import NavigationCache from '@/components/NavigationCache.astro';
 import { siteConfig } from '@/lib/config';
 import { absoluteUrl, withBase } from '@/lib/base';
 import '@/styles/global.css';
@@ -67,7 +68,7 @@ const shareImage = image ? absoluteUrl(image) : undefined;
       name="theme-color"
       media="(prefers-color-scheme: dark)"
       content="#17171d"
-    /><slot name="head" /><ClientRouter fallback="animate" /><script is:inline>
+    /><slot name="head" /><ClientRouter fallback="animate" /><NavigationCache /><script is:inline>
       try {
         const p = localStorage.getItem('yumeno:theme') ?? 'system';
         const d =

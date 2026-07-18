@@ -132,6 +132,26 @@ body:not([data-page='home']) .scene-wash {
   background: color-mix(in srgb, var(--paper) 78%, transparent);
   backdrop-filter: blur(18px);
 }
+.site-header::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  pointer-events: none;
+}
+html[data-navigation-pending] .site-header::after {
+  opacity: 0.72;
+  transform: scaleX(0.86);
+  transition:
+    transform 2.8s cubic-bezier(0.12, 0.72, 0.2, 1),
+    opacity 0.18s ease;
+}
 .brand {
   display: inline-flex;
   align-items: center;
