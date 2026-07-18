@@ -56,6 +56,10 @@ const initial = config.scenes.find((scene) => scene.id === config.fallback) ?? c
       if (image.getAttribute('src') !== scene.image) {
         backdrop.classList.add('scene-switching');
         const next = new Image();
+        if (scene.srcset) {
+          next.sizes = '100vw';
+          next.srcset = scene.srcset;
+        }
         next.onload = () => {
           if (scene.srcset) image.srcset = scene.srcset;
           else image.removeAttribute('srcset');
@@ -67,6 +71,7 @@ const initial = config.scenes.find((scene) => scene.id === config.fallback) ?? c
         next.src = scene.image;
       } else {
         if (scene.srcset) image.srcset = scene.srcset;
+        else image.removeAttribute('srcset');
         image.style.objectPosition = scene.focus || '50% 50%';
       }
       backdrop.dataset.scene = scene.id;

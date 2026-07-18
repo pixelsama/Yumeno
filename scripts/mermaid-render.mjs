@@ -223,6 +223,7 @@ for (const prop of ['offsetWidth', 'offsetHeight']) {
 
 let mermaidPromise;
 let counter = 0;
+let renderQueue = Promise.resolve();
 
 // This module executes inside Astro's Vite SSR runner, which may be closed by
 // the time a lazy dynamic import resolves. Resolve mermaid through Node's own
@@ -235,26 +236,32 @@ async function engine() {
       const require = createRequire(import.meta.url);
       const entry = require.resolve('mermaid');
       const mod = await nativeImport(pathToFileURL(entry).href);
-      const mermaid = mod.default;
-      mermaid.initialize({
-        startOnLoad: false,
-        securityLevel: 'strict',
-        fontFamily: 'inherit',
-        // Static output should be self-contained SVG text, not foreignObject HTML.
-        flowchart: { htmlLabels: false },
-      });
-      return mermaid;
+      return mod.default;
     })();
   }
   return mermaidPromise;
 }
 
 export async function renderMermaidToSvg(code, theme) {
-  const mermaid = await engine();
-  const id = `mermaid-build-${theme}-${(counter += 1)}`;
-  const { svg } = await mermaid.render(id, code, undefined, { theme });
-  return svg
-    .replace(/<br\s*\/?>/gi, '<br/>')
-    .replace(/&nbsp;/g, ' ')
-    .trim();
+  // Mermaid stores configuration globally. Serialize renders so parallel Astro
+  // pages cannot race while switching between the light and dark themes.
+  const task = renderQueue.then(async () => {
+    const mermaid = await engine();
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      theme,
+      fontFamily: 'inherit',
+      // Static output should be self-contained SVG text, not foreignObject HTML.
+      flowchart: { htmlLabels: false },
+    });
+    const id = `mermaid-build-${theme}-${(counter += 1)}`;
+    const { svg } = await mermaid.render(id, code);
+    return svg
+      .replace(/<br\s*\/?>/gi, '<br/>')
+      .replace(/&nbsp;/g, ' ')
+      .trim();
+  });
+  renderQueue = task.catch(() => undefined);
+  return task;
 }
